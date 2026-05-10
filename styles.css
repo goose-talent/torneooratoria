@@ -1,0 +1,1692 @@
+/* =============================================================
+   II Torneo de Oratoria de Chamberí — Estilos infantiles
+   ============================================================= */
+
+:root {
+    --c-azul: #2196F3;
+    --c-azul-claro: #64B5F6;
+    --c-amarillo: #FFC107;
+    --c-rojo: #F44336;
+    --c-rosa: #FF6FA3;
+    --c-verde: #4CAF50;
+    --c-verde-claro: #81C784;
+    --c-violeta: #9C27B0;
+    --c-naranja: #FF9800;
+    --c-fondo-1: #FFE082;
+    --c-fondo-2: #80D8FF;
+    --c-texto: #2C2C54;
+    --c-texto-suave: #5A5A7A;
+    --radio: 22px;
+    --sombra: 0 8px 24px rgba(44, 44, 84, 0.15);
+    --sombra-fuerte: 0 12px 32px rgba(44, 44, 84, 0.22);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+    font-family: 'Fredoka', 'Baloo 2', 'Comic Sans MS', sans-serif;
+    background:
+        radial-gradient(circle at 10% 0%, #FFE082 0%, transparent 40%),
+        radial-gradient(circle at 90% 10%, #FFAB91 0%, transparent 35%),
+        radial-gradient(circle at 50% 100%, #80DEEA 0%, transparent 45%),
+        linear-gradient(135deg, #B3E5FC 0%, #FFF59D 100%);
+    background-attachment: fixed;
+    color: var(--c-texto);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+/* Logo de la marca */
+.logo {
+    width: 140px;
+    height: auto;
+    margin-bottom: 12px;
+    margin-bottom: -27px;
+}
+
+/* ---------- Decoraciones de fondo (globos y estrellas) ---------- */
+.decoraciones {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.globo {
+    position: absolute;
+    width: 80px;
+    height: 100px;
+    border-radius: 50%;
+    opacity: 0.55;
+    filter: blur(0.5px);
+    animation: flotar 9s ease-in-out infinite;
+}
+
+.globo::after {
+    content: '';
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    width: 2px;
+    height: 40px;
+    background: rgba(0,0,0,0.2);
+    transform: translateX(-50%);
+}
+
+.globo-1 { background: var(--c-rojo);     top: 10%; left: 5%;  animation-delay: 0s; }
+.globo-2 { background: var(--c-azul);     top: 60%; left: 90%; animation-delay: 2s; }
+.globo-3 { background: var(--c-verde);    top: 30%; left: 92%; animation-delay: 4s; }
+
+.estrella {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    background: var(--c-amarillo);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    opacity: 0.7;
+    animation: girar 12s linear infinite;
+}
+
+.estrella-1 { top: 20%; left: 88%; }
+.estrella-2 { top: 75%; left: 8%; animation-delay: -6s; }
+
+@keyframes flotar {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50%      { transform: translateY(-25px) rotate(3deg); }
+}
+
+@keyframes girar {
+    from { transform: rotate(0); }
+    to   { transform: rotate(360deg); }
+}
+
+/* ---------- Header ---------- */
+header {
+    position: relative;
+    z-index: 1;
+    padding: 30px 20px 20px;
+    text-align: center;
+}
+
+.header-contenido {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border: 4px solid var(--c-amarillo);
+    border-radius: var(--radio);
+    padding: 24px 28px;
+    box-shadow: var(--sombra);
+}
+
+header h1 {
+    font-family: 'Baloo 2', 'Fredoka', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.6em, 4vw, 2.8em);
+    color: var(--c-azul);
+    text-shadow: 3px 3px 0 var(--c-amarillo);
+    line-height: 1.1;
+}
+
+.subtitulo {
+    margin-top: 6px;
+    font-size: 1.15em;
+    color: var(--c-texto-suave);
+    font-weight: 500;
+}
+
+.info-evento {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.chip, .chip-fecha, .chip-lugar {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95em;
+    border: 3px solid transparent;
+}
+
+.chip       { background: var(--c-rosa);    color: white; }
+.chip-fecha { background: var(--c-amarillo); color: var(--c-texto); }
+.chip-lugar { background: var(--c-azul);     color: white; }
+
+/* ---------- Tabs ---------- */
+.tabs {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 20px;
+    margin-bottom: 16px;
+}
+
+.tab {
+    background: white;
+    border: 3px solid var(--c-azul);
+    color: var(--c-azul);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 1em;
+    padding: 10px 22px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s, color 0.2s;
+}
+
+.tab:hover { transform: translateY(-2px); }
+
+.tab.tab-activa {
+    background: var(--c-azul);
+    color: white;
+    box-shadow: var(--sombra);
+}
+
+/* ---------- Main / modos ---------- */
+main {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    padding: 10px 20px 30px;
+}
+
+.main-content { max-width: 1400px; margin: 0 auto; width: 100%; }
+
+.modo { display: none; }
+.modo.activo { display: block; }
+
+.contenedor-principal {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Oculta el bloque lateral cuando todos sus paneles están ocultos,
+   así la columna principal ocupa el ancho completo (igual que el header). */
+.sorteo-asides:not(:has(> *:not(.hidden))) { display: none; }
+
+#modo-puntuacion .contenedor-principal > .tarjeta { flex: 1; min-width: 320px; }
+
+.seccion-ruleta { flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ---------- Tarjetas ---------- */
+.tarjeta {
+    background: white;
+    border-radius: var(--radio);
+    padding: 24px;
+    box-shadow: var(--sombra);
+    border-top: 6px solid var(--c-amarillo);
+}
+
+h2 {
+    font-family: 'Baloo 2', sans-serif;
+    color: var(--c-azul);
+    font-size: 1.6em;
+    margin-bottom: 12px;
+}
+
+h3 {
+    font-family: 'Baloo 2', sans-serif;
+    color: var(--c-violeta);
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.ayuda { color: var(--c-texto-suave); margin-bottom: 14px; }
+
+/* ---------- Formularios y selects ---------- */
+select, input[type="text"], input[type="file"], input[type="number"] {
+    font-family: inherit;
+    font-size: 1em;
+    padding: 12px 14px;
+    border: 3px solid #E0E0E0;
+    border-radius: 14px;
+    background: #FAFAFA;
+    color: var(--c-texto);
+    width: 100%;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+select:focus, input:focus {
+    outline: none;
+    border-color: var(--c-azul);
+    background: white;
+}
+
+select { cursor: pointer; }
+
+.campo { margin-bottom: 12px; }
+.campo label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--c-texto);
+}
+
+/* ---------- Botones ---------- */
+.btn, button {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 1em;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+    margin-top: 8px;
+}
+
+.btn:hover, button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra);
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-primario  { background: var(--c-verde);  color: white; }
+.btn-primario:hover { background: #43A047; }
+
+.btn-secundario { background: var(--c-azul); color: white; }
+.btn-secundario:hover { background: #1976D2; }
+
+.btn-rojo { background: var(--c-rojo); color: white; }
+.btn-rojo:hover { background: #D32F2F; }
+
+.btn-fantasma {
+    background: white;
+    color: var(--c-azul);
+    border: 3px solid var(--c-azul);
+}
+
+.btn-fantasma:hover { background: var(--c-azul); color: white; }
+
+/* ---------- Sección Hazme fan / cronómetro ---------- */
+.explicacion-prueba {
+    background: #FFF8E1;
+    border: 3px dashed var(--c-amarillo);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+}
+
+.explicacion-prueba p { line-height: 1.5; margin-bottom: 8px; }
+
+.lista-objetivos {
+    margin-top: 8px;
+    padding-left: 22px;
+}
+
+.lista-objetivos li {
+    margin: 4px 0;
+    line-height: 1.4;
+}
+
+.cronometro-container {
+    text-align: center;
+    padding: 24px;
+    background: linear-gradient(135deg, #E3F2FD 0%, #FFF9C4 100%);
+    border-radius: 20px;
+    border: 4px solid white;
+    box-shadow: inset 0 0 0 2px var(--c-azul);
+}
+
+.cronometro {
+    font-family: 'Baloo 2', monospace;
+    font-size: clamp(4em, 14vw, 8em);
+    font-weight: 800;
+    color: var(--c-azul);
+    line-height: 1;
+    letter-spacing: 4px;
+    text-shadow: 4px 4px 0 var(--c-amarillo);
+    transition: color 0.3s, text-shadow 0.3s, transform 0.3s;
+}
+
+.cronometro.crono-minimo {
+    color: var(--c-verde);
+    text-shadow: 4px 4px 0 #C8E6C9;
+}
+
+.cronometro.crono-final {
+    color: var(--c-rojo);
+    text-shadow: 4px 4px 0 #FFCDD2;
+    animation: pulso 0.6s ease-in-out infinite;
+}
+
+@keyframes pulso {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.05); }
+}
+
+.cronometro-marcas {
+    display: flex;
+    justify-content: space-between;
+    max-width: 320px;
+    margin: 8px auto 16px;
+    color: var(--c-texto-suave);
+    font-weight: 600;
+}
+
+.marca-min { color: var(--c-verde); }
+.marca-max { color: var(--c-rojo); }
+
+.cronometro-botones {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.crono-estado {
+    margin-top: 12px;
+    font-weight: 600;
+    color: var(--c-texto-suave);
+    min-height: 1.5em;
+}
+
+/* ---------- Columna de paneles laterales ----------
+   Contenedor que apila el historial y el cronómetro de La Palabra
+   Caliente en columna. Tiene el ancho fijo del historial anterior. */
+.sorteo-asides {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
+}
+
+/* ---------- Historial ---------- */
+.historial-panel {
+    border-top: 6px solid var(--c-rosa);
+}
+
+.historial-panel h3 {
+    color: var(--c-rosa);
+    text-align: center;
+    border-bottom: 3px solid var(--c-rosa);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+
+.historial-contenido {
+    max-height: 600px;
+    overflow-y: auto;
+    margin-top: 10px;
+}
+
+.historial-item {
+    background: linear-gradient(135deg, var(--c-azul) 0%, var(--c-violeta) 100%);
+    color: white;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    font-size: 0.95em;
+    line-height: 1.4;
+    box-shadow: var(--sombra);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.historial-numero {
+    font-weight: 800;
+    display: block;
+    margin-bottom: 4px;
+    color: var(--c-amarillo);
+}
+
+.historial-vacio {
+    color: var(--c-texto-suave);
+    text-align: center;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* ---------- Ruletas ----------
+   Contenedor flexible: una sola ruleta queda enorme (hasta 560 px).
+   En modo "múltiple" (Fábrica de Historias) son tres bloques que se
+   reparten el ancho disponible con un mínimo razonable. */
+#ruleta-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin: 20px 0;
+}
+
+/* Bloque por ruleta: etiqueta arriba, canvas en medio, resultado destacado debajo. */
+.ruleta-bloque {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 280px;            /* base mínima para que entren tres en pantallas anchas */
+    max-width: 480px;
+}
+
+.ruleta-bloque.solo {
+    flex: 1 1 100%;
+    max-width: 560px;            /* en pruebas de una sola ruleta, mucho más grande */
+}
+
+.ruleta-etiqueta {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 1.4em;
+    color: var(--c-violeta);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: white;
+    padding: 6px 18px;
+    border-radius: 999px;
+    border: 3px solid var(--c-violeta);
+    box-shadow: var(--sombra);
+}
+
+/* Canvas: la resolución interna se fija en JS (canvas.width/height).
+   El tamaño visual lo decide el CSS para que se adapte al contenedor. */
+canvas {
+    border-radius: 50%;
+    box-shadow: var(--sombra-fuerte);
+    background: white;
+    border: 8px solid white;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    max-width: 480px;
+}
+
+/* Cuando hay una sola ruleta, dejamos que crezca aún más. */
+.ruleta-bloque.solo canvas {
+    max-width: 560px;
+}
+
+/* Resultado destacado debajo de cada ruleta (sólo Fábrica de Historias) */
+.ruleta-resultado {
+    margin-top: 4px;
+    padding: 10px 14px;
+    background: var(--c-amarillo);
+    color: var(--c-texto);
+    font-weight: 700;
+    border-radius: 14px;
+    text-align: center;
+    min-height: 1.4em;
+    width: 100%;
+    box-shadow: var(--sombra);
+    transition: transform 0.25s, background 0.25s;
+}
+
+.ruleta-resultado.vacio {
+    background: #ECEFF1;
+    color: var(--c-texto-suave);
+    font-style: italic;
+    font-weight: 500;
+}
+
+.ruleta-resultado.recien-aterrizado {
+    transform: scale(1.05);
+    background: var(--c-verde);
+    color: white;
+}
+
+/* Aviso de combinación repetida (Fábrica) */
+.aviso-repetida {
+    background: #FFF3E0;
+    border: 3px dashed var(--c-naranja);
+    color: var(--c-naranja);
+    font-weight: 700;
+    text-align: center;
+    padding: 10px 14px;
+    border-radius: 14px;
+    margin: 12px 0;
+}
+
+/* ---------- Cronómetro específico de Fábrica de Historias ---------- */
+.fabrica-crono {
+    margin-top: 18px;
+    padding: 20px;
+    background: linear-gradient(135deg, #E1F5FE 0%, #FFF9C4 100%);
+    border-radius: 20px;
+    border: 4px solid white;
+    box-shadow: inset 0 0 0 2px var(--c-violeta);
+    text-align: center;
+}
+
+.fabrica-fase {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 3px solid var(--c-violeta);
+    border-radius: 999px;
+    padding: 6px 16px;
+    margin-bottom: 10px;
+    color: var(--c-violeta);
+    font-weight: 700;
+}
+
+.fabrica-fase .fabrica-etiqueta {
+    font-size: 0.9em;
+    color: var(--c-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.fabrica-display {
+    font-size: clamp(3.5em, 11vw, 6em);
+}
+
+.fabrica-display.fase-discurso {
+    color: var(--c-azul);
+    text-shadow: 4px 4px 0 #BBDEFB;
+}
+
+/* ---------- Cronómetro específico de Voces con Derecho ----------
+   Reusa la misma estructura visual que el de Fábrica pero con
+   identidad propia (colores azul/violeta, una sola fase). */
+.voces-crono {
+    margin-top: 18px;
+    padding: 20px;
+    background: linear-gradient(135deg, #EDE7F6 0%, #E3F2FD 100%);
+    border-radius: 20px;
+    border: 4px solid white;
+    box-shadow: inset 0 0 0 2px var(--c-azul);
+    text-align: center;
+}
+
+.voces-crono-titulo {
+    display: inline-block;
+    background: white;
+    border: 3px solid var(--c-azul);
+    border-radius: 999px;
+    padding: 6px 18px;
+    margin-bottom: 10px;
+    color: var(--c-azul);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9em;
+}
+
+.voces-display {
+    font-size: clamp(3.5em, 11vw, 6em);
+    color: var(--c-azul);
+    text-shadow: 4px 4px 0 #BBDEFB;
+}
+
+.voces-marcas {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin: 4px auto 12px;
+    color: var(--c-texto-suave);
+    font-weight: 600;
+}
+
+/* ---------- Duelo de Personajes — Asignación de participantes ---------- */
+.duelo-asignar {
+    margin-top: 18px;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+    border-radius: 20px;
+    border: 4px solid white;
+    box-shadow: inset 0 0 0 2px var(--c-naranja);
+}
+
+.duelo-asignar h3 {
+    color: var(--c-naranja);
+    margin-bottom: 4px;
+}
+
+.duelo-asignar-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+    align-items: end;
+    margin: 14px 0;
+}
+
+.duelo-asignar .duelo-vs {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 2em;
+    color: var(--c-rojo);
+    text-align: center;
+    padding-bottom: 14px;
+    text-shadow: 2px 2px 0 white;
+}
+
+.duelo-aviso {
+    margin-top: 10px;
+    color: var(--c-rojo);
+    font-weight: 600;
+    min-height: 1.2em;
+}
+
+/* ---------- Duelo de Personajes — Elección de personaje ---------- */
+.duelo-eleccion {
+    margin-top: 18px;
+    padding: 22px 24px;
+    background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+    border-radius: 20px;
+    border: 4px solid white;
+    box-shadow: inset 0 0 0 2px var(--c-naranja);
+    text-align: center;
+}
+
+.duelo-eleccion h3 { color: var(--c-naranja); margin-bottom: 6px; }
+
+.duelo-eleccion-botones {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.duelo-vs-eleccion {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 2em;
+    color: var(--c-rojo);
+    text-shadow: 2px 2px 0 white;
+}
+
+.duelo-btn-personaje {
+    background: linear-gradient(135deg, var(--c-azul) 0%, var(--c-violeta) 100%);
+    color: white;
+    font-size: 1.1em;
+    padding: 16px 26px;
+    border-radius: 16px;
+    min-width: 150px;
+    border: none;
+}
+
+.duelo-btn-personaje:hover {
+    transform: translateY(-4px) scale(1.04);
+    box-shadow: var(--sombra-fuerte);
+    background: linear-gradient(135deg, var(--c-violeta) 0%, var(--c-azul) 100%);
+}
+
+/* ---------- Duelo de Personajes — Cronómetro doble ---------- */
+.duelo-crono {
+    margin-top: 18px;
+    padding: 20px;
+    background: linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 100%);
+    border-radius: 20px;
+    border: 4px solid white;
+    box-shadow: inset 0 0 0 2px var(--c-rojo);
+    text-align: center;
+}
+
+.duelo-fase {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 3px solid var(--c-rojo);
+    border-radius: 999px;
+    padding: 6px 16px;
+    margin-bottom: 10px;
+    color: var(--c-rojo);
+    font-weight: 700;
+}
+
+.duelo-fase .duelo-etiqueta {
+    font-size: 0.9em;
+    color: var(--c-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.duelo-display {
+    font-size: clamp(3.5em, 11vw, 6em);
+    color: var(--c-rojo);
+    text-shadow: 4px 4px 0 #FFCDD2;
+}
+
+.duelo-display.fase-argumentar {
+    color: var(--c-azul);
+    text-shadow: 4px 4px 0 #BBDEFB;
+}
+
+/* ---------- Final 1 — Declamación — Cronómetro doble ----------
+   Fase 1: 2:00 preparación (fondo violeta).
+   Fase 2: declamación de 1:30 mín. a 2:00 máx.
+     · Verde cuando quedan ≤ 0:30 (mínimo de 1:30 cumplido).
+     · Rojo en los últimos 10 s. */
+.decla-crono {
+    margin-top: 18px;
+    padding: 20px;
+    background: linear-gradient(135deg, #E8EAF6 0%, #F3E5F5 100%);
+    border-radius: 20px;
+    border: 4px solid white;
+    box-shadow: inset 0 0 0 2px var(--c-violeta);
+    text-align: center;
+}
+
+.decla-fase {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 3px solid var(--c-violeta);
+    border-radius: 999px;
+    padding: 6px 16px;
+    margin-bottom: 10px;
+    color: var(--c-violeta);
+    font-weight: 700;
+}
+
+.decla-fase .decla-etiqueta {
+    font-size: 0.9em;
+    color: var(--c-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.decla-display {
+    font-size: clamp(3.5em, 11vw, 6em);
+    color: var(--c-violeta);
+    text-shadow: 4px 4px 0 #EDE7F6;
+}
+
+/* Al entrar en la fase de declamación el número cambia a azul */
+.decla-display.fase-declamacion {
+    color: var(--c-azul);
+    text-shadow: 4px 4px 0 #BBDEFB;
+}
+
+/* ---------- Tarjetas de participantes con su personaje ----------
+   Reutiliza .resultado-dupla-final (ya existente) pero añade nombre
+   del alumno y de su equipo encima del personaje asignado. */
+.participante-equipo {
+    color: var(--c-texto-suave);
+    font-size: 0.85em;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+/* ================================================================
+   Final 2 — La Palabra Caliente — Cronómetro de intervenciones
+   ================================================================
+   El panel lateral muestra un bloque de color que alterna entre
+   azul (Participante A) y naranja (Participante B) cada 20 segundos.
+   Debajo aparece la tabla de palitos (trazos verticales) que registra
+   cuántas intervenciones ha completado cada participante.
+   ================================================================ */
+
+/* ---------- Panel del cronómetro de intervenciones ---------- */
+.palabra-crono-panel {
+    border-top: 6px solid var(--c-naranja);
+}
+
+.palabra-crono-panel h3 {
+    color: var(--c-naranja);
+    text-align: center;
+    border-bottom: 3px solid var(--c-naranja);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+
+/* ---------- Bloque de color del turno activo ----------
+   Cambia entre azul (A) y naranja (B) mediante las clases .turno-a / .turno-b.
+   La transición de 0.5 s hace el cambio de color suave y llamativo. */
+.palabra-turno-display {
+    border-radius: 16px;
+    padding: 22px 16px;
+    margin-bottom: 14px;
+    text-align: center;
+    transition: background 0.5s ease, box-shadow 0.5s ease;
+}
+
+.palabra-turno-display.turno-a {
+    background: linear-gradient(135deg, var(--c-azul) 0%, #1565C0 100%);
+    box-shadow: 0 8px 20px rgba(33, 150, 243, 0.35);
+}
+
+.palabra-turno-display.turno-b {
+    background: linear-gradient(135deg, var(--c-naranja) 0%, #E65100 100%);
+    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.35);
+}
+
+/* Nombre del participante activo (blanco sobre color) */
+.palabra-participante-label {
+    color: rgba(255,255,255,0.85);
+    font-size: 0.95em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+/* Contador de segundos grande — blanco sobre el fondo de color */
+.palabra-cuenta-display {
+    font-size: clamp(3em, 9vw, 4.5em);
+    font-weight: 700;
+    color: white;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.15);
+    line-height: 1;
+}
+
+/* Aviso de urgencia: el número pulsa cuando quedan ≤ 5 s */
+.palabra-cuenta-display.crono-urgente {
+    animation: palabraPulso 0.4s ease-in-out infinite;
+    color: #FFEE58; /* amarillo visible sobre azul u naranja */
+}
+
+@keyframes palabraPulso {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.10); }
+}
+
+/* Indicador de turno (ej: "Turno 3 de 6") */
+.palabra-turno-info {
+    color: rgba(255,255,255,0.75);
+    font-size: 0.85em;
+    margin-top: 6px;
+}
+
+/* ---------- Tabla de palitos ----------
+   Muestra dos filas (Participante A / Participante B) con un trazo
+   vertical por cada intervención completada. */
+.palabra-palitos-tabla {
+    margin-top: 16px;
+    border: 3px solid var(--c-naranja);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.palitos-fila {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+}
+
+.palitos-fila-a {
+    background: linear-gradient(90deg, #E3F2FD 0%, white 100%);
+    border-bottom: 2px solid rgba(255,152,0,0.2);
+}
+
+.palitos-fila-b {
+    background: linear-gradient(90deg, #FFF3E0 0%, white 100%);
+}
+
+/* Etiqueta del participante */
+.palitos-nombre {
+    font-weight: 700;
+    font-size: 0.85em;
+    min-width: 52px;
+    color: var(--c-texto-suave);
+}
+
+.palitos-fila-a .palitos-nombre { color: var(--c-azul); }
+.palitos-fila-b .palitos-nombre { color: var(--c-naranja); }
+
+/* Contenedor de los trazos */
+.palitos-marcas {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+    min-height: 32px;
+}
+
+/* Un palito = trazo vertical. La clase .palito-ultimo anima el último en aparecer. */
+.palito {
+    display: inline-block;
+    width: 5px;
+    height: 30px;
+    background: var(--c-texto);
+    border-radius: 3px;
+}
+
+.palitos-fila-a .palito { background: var(--c-azul); }
+.palitos-fila-b .palito { background: var(--c-naranja); }
+
+/* El último palito añadido se escala desde 0 hacia arriba (efecto de trazo) */
+.palito.palito-ultimo {
+    animation: palito-entrada 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes palito-entrada {
+    from { transform: scaleY(0); transform-origin: bottom; }
+    to   { transform: scaleY(1); transform-origin: bottom; }
+}
+
+.acciones-ruleta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+#resultado {
+    text-align: center;
+    font-size: 1.4em;
+    font-weight: 700;
+    color: var(--c-texto);
+    margin: 16px 0;
+    min-height: 30px;
+}
+
+.resultado-multiple { line-height: 1.7; }
+
+.resultado-item, .resultado-articulo, .resultado-dupla,
+.resultado-dupla-final, .resultado-genero, .resultado-simple,
+.resultado-palabra {
+    padding: 18px 20px;
+    border-radius: 16px;
+    line-height: 1.5;
+    margin: 10px 0;
+}
+
+.resultado-item     { background: #E1F5FE; color: var(--c-texto); font-size: 1.1em; }
+
+/* Resultado de Voces con Derecho — número grande y descripción debajo,
+   pensado para que se vea desde lejos por jurado y alumno. */
+.resultado-articulo {
+    background: linear-gradient(135deg, var(--c-azul) 0%, var(--c-violeta) 100%);
+    color: white;
+    padding: 28px 24px !important;
+    text-align: center;
+}
+.resultado-articulo strong { display: block; color: var(--c-amarillo); }
+
+.articulo-numero {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.6em, 8vw, 4.5em);
+    line-height: 1;
+    color: var(--c-amarillo);
+    text-shadow: 4px 4px 0 rgba(0,0,0,0.18);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.articulo-etiqueta {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    color: white;
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 0.85em;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+}
+
+.articulo-descripcion {
+    font-size: clamp(1.2em, 2.6vw, 1.7em);
+    line-height: 1.35;
+    font-weight: 600;
+    margin-top: 6px;
+}
+.resultado-dupla    { background: linear-gradient(135deg, #FFF59D 0%, #FFCA28 100%); }
+.resultado-dupla strong { color: var(--c-rojo); }
+
+.resultado-dupla-final {
+    background: linear-gradient(135deg, #FFF59D 0%, #FFCA28 100%);
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+}
+
+.resultado-dupla-final .dupla-info { flex: 1 1 200px; text-align: center; }
+.resultado-dupla-final .asignacion { display: flex; gap: 14px; flex-wrap: wrap; }
+.resultado-dupla-final .participante-a,
+.resultado-dupla-final .participante-b {
+    text-align: center;
+    padding: 14px;
+    background: white;
+    border-radius: 12px;
+    min-width: 140px;
+}
+.resultado-dupla-final .personaje {
+    display: block;
+    font-weight: 800;
+    color: var(--c-rojo);
+    margin-top: 4px;
+}
+
+.btn-segundo-giro {
+    background: linear-gradient(135deg, var(--c-azul) 0%, var(--c-violeta) 100%);
+    color: white;
+    padding: 14px 26px;
+}
+
+.resultado-genero  { background: #B3E5FC; }
+.resultado-simple  { background: #E1BEE7; }
+.resultado-palabra { background: linear-gradient(135deg, var(--c-rosa) 0%, var(--c-rojo) 100%); color: white; }
+.resultado-palabra strong { color: var(--c-amarillo); display: block; margin-bottom: 6px; }
+
+/* ---------- Equipos ---------- */
+.form-equipo .alumnos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.equipos-lista { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
+
+.equipo-card {
+    background: #F3E5F5;
+    border-left: 6px solid var(--c-violeta);
+    padding: 14px 16px;
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.equipo-card .equipo-info { flex: 1; }
+.equipo-card h4 {
+    font-family: 'Baloo 2', sans-serif;
+    color: var(--c-violeta);
+    margin-bottom: 4px;
+}
+
+.equipo-card .equipo-alumnos {
+    font-size: 0.92em;
+    color: var(--c-texto-suave);
+    margin-top: 4px;
+}
+
+.equipo-card .equipo-puntos {
+    background: var(--c-amarillo);
+    color: var(--c-texto);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.equipo-card .btn-borrar-equipo {
+    background: transparent;
+    color: var(--c-rojo);
+    border: 2px solid var(--c-rojo);
+    padding: 6px 12px;
+    font-size: 0.85em;
+    margin-top: 0;
+}
+
+.equipo-card .btn-borrar-equipo:hover { background: var(--c-rojo); color: white; }
+
+/* ---------- Rúbrica de puntuación ---------- */
+.form-puntuar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.rubrica { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+
+.criterio {
+    background: #F5F7FA;
+    border-radius: 14px;
+    padding: 14px 16px;
+    border-left: 5px solid var(--c-azul);
+}
+
+.criterio-nombre {
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--c-texto);
+}
+
+.criterio-opciones { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.opcion-puntos {
+    flex: 1;
+    min-width: 60px;
+    padding: 12px 0;
+    text-align: center;
+    background: white;
+    border: 3px solid #E0E0E0;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1.2em;
+    transition: all 0.15s;
+}
+
+.opcion-puntos:hover { border-color: var(--c-azul); }
+
+.opcion-puntos.seleccionada {
+    background: var(--c-azul);
+    color: white;
+    border-color: var(--c-azul);
+    transform: scale(1.05);
+}
+
+.opcion-puntos[data-valor="1"].seleccionada { background: var(--c-rojo);     border-color: var(--c-rojo); }
+.opcion-puntos[data-valor="2"].seleccionada { background: var(--c-naranja);  border-color: var(--c-naranja); }
+.opcion-puntos[data-valor="3"].seleccionada { background: var(--c-azul);     border-color: var(--c-azul); }
+.opcion-puntos[data-valor="4"].seleccionada { background: var(--c-verde);    border-color: var(--c-verde); }
+
+.punt-total-box {
+    background: var(--c-amarillo);
+    border-radius: 14px;
+    padding: 14px 18px;
+    text-align: center;
+    font-size: 1.3em;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.punt-total-box strong {
+    font-size: 1.6em;
+    color: var(--c-azul);
+    margin: 0 6px;
+}
+
+.punt-max { color: var(--c-texto-suave); font-weight: 500; font-size: 0.9em; }
+
+/* ---------- Ranking ---------- */
+.ranking-controles {
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.ranking-controles select { width: auto; min-width: 220px; }
+
+.ranking-tabla {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ranking-fila {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    align-items: center;
+    background: white;
+    border: 3px solid #E0E0E0;
+    border-radius: 14px;
+    padding: 14px 18px;
+    gap: 14px;
+}
+
+.ranking-fila .pos {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 1.8em;
+    font-weight: 800;
+    text-align: center;
+    color: var(--c-texto-suave);
+}
+
+.ranking-fila.top-1 { border-color: #FFD700; background: #FFFDE7; }
+.ranking-fila.top-1 .pos { color: #F9A825; }
+.ranking-fila.top-2 { border-color: #BDBDBD; background: #FAFAFA; }
+.ranking-fila.top-2 .pos { color: #757575; }
+.ranking-fila.top-3 { border-color: #BF8970; background: #FFF3E0; }
+.ranking-fila.top-3 .pos { color: #8D5524; }
+
+.ranking-fila .nombre-equipo {
+    font-weight: 700;
+    font-size: 1.1em;
+    color: var(--c-texto);
+}
+
+.ranking-fila .detalle-equipo {
+    color: var(--c-texto-suave);
+    font-size: 0.9em;
+}
+
+.ranking-fila .puntos-totales {
+    background: var(--c-azul);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 1.2em;
+}
+
+.ranking-vacio {
+    text-align: center;
+    color: var(--c-texto-suave);
+    padding: 30px;
+    font-style: italic;
+}
+
+/* ---------- Footer ---------- */
+footer {
+    position: relative;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--c-texto-suave);
+    text-align: center;
+    padding: 14px;
+    backdrop-filter: blur(10px);
+    font-weight: 500;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- Hazme fan — Selector de equipos ---------- */
+.hazme-equipos-selector {
+    margin: 0 0 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #E8F5E9 0%, #F3E5F5 100%);
+    border-radius: 18px;
+    border: 3px solid var(--c-verde);
+}
+
+.hazme-equipos-selector h3 {
+    color: var(--c-verde);
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.hazme-equipos-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+    min-height: 48px;
+    justify-content: center;
+}
+
+.hazme-equipo-chip {
+    background: linear-gradient(135deg, #2196f3 0%, #2196f3 100%);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 14px;
+    font-family: 'Fredoka', cursive;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(33,150,243,0.3);
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.hazme-equipo-chip.seleccionado {
+    background: #BDBDBD;
+    box-shadow: none;
+    opacity: 0.55;
+}
+
+.hazme-equipo-chip.iluminado {
+    background: linear-gradient(135deg, var(--c-amarillo) 0%, var(--c-naranja) 100%);
+    color: var(--c-texto);
+    box-shadow: 0 0 22px rgba(255,193,7,0.7), 0 4px 12px rgba(255,152,0,0.5);
+    animation: hazme-pulso 0.55s ease-in-out infinite alternate;
+}
+
+@keyframes hazme-pulso {
+    from { transform: scale(1); }
+    to   { transform: scale(1.07); }
+}
+
+.hazme-selector-estado {
+    font-weight: 600;
+    color: var(--c-texto-suave);
+    font-size: 0.95rem;
+    margin-top: 6px;
+    min-height: 1.3em;
+    text-align: center;
+}
+
+.btn btn-selecccion {
+    background: linear-gradient(135deg, var(--c-azul) 0%, var(--c-violeta) 100%);
+   border-radius: 20px;
+}
+
+/* Pop-up de llamada de equipo */
+.hazme-popup {
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 44, 84, 0.82);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hazme-popup-contenido {
+    background: white;
+    border-radius: 28px;
+    padding: 3.5rem 4.5rem;
+    text-align: center;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+    max-width: 90vw;
+    animation: hazme-popup-entrada 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-top: 8px solid var(--c-amarillo);
+}
+
+@keyframes hazme-popup-entrada {
+    from { transform: scale(0.4); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+.hazme-popup-equipo {
+    font-family: 'Fredoka', cursive;
+    font-size: 1.5rem;
+    color: var(--c-texto-suave);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.hazme-popup-nombre {
+    font-family: 'Baloo 2', cursive;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    font-weight: 800;
+    color: var(--c-azul);
+    margin-bottom: 2rem;
+    line-height: 1.2;
+    white-space: pre-line; /* permite \n en textContent (usado en asignación del duelo final) */
+}
+
+.hazme-popup-cuenta {
+    font-family: 'Baloo 2', cursive;
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--c-naranja);
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #FFF3E0;
+    border: 5px solid var(--c-naranja);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+/* ================================================================
+   Final 3 — Duelo de Personajes Final — Sorteo de equipos + cronómetro
+   ================================================================
+   Bloque de sorteo: aparece en el área principal tras girar la ruleta.
+   Panel lateral: cronómetro de 4 fases con bloque de color alternante
+   y tabla de réplicas igual que en La Palabra Caliente.
+   ================================================================ */
+
+/* ---------- Botón de sorteo de equipos (en área principal) ---------- */
+.duelo-final-asignar {
+    margin-top: 18px;
+    padding: 20px;
+    background: linear-gradient(135deg, #EDE7F6 0%, #F3E5F5 100%);
+    border-radius: 20px;
+    border: 4px solid white;
+    box-shadow: inset 0 0 0 2px var(--c-violeta);
+    text-align: center;
+}
+
+/* ---------- Panel lateral del duelo final ---------- */
+.duelo-final-panel {
+    border-top: 6px solid var(--c-violeta);
+}
+
+.duelo-final-panel h3 {
+    color: var(--c-violeta);
+    text-align: center;
+    border-bottom: 3px solid var(--c-violeta);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+
+/* ---------- Bloque de color del turno activo ----------
+   Cambia de fondo según la fase:
+   · fase-prep  → violeta suave (preparación)
+   · turno-a    → azul intenso (equipo A)
+   · turno-b    → naranja intenso (equipo B)
+   La transición de 0.5 s hace el cambio visual y llamativo. */
+.duelo-final-bloque {
+    border-radius: 16px;
+    padding: 22px 16px;
+    margin-bottom: 14px;
+    text-align: center;
+    transition: background 0.5s ease, box-shadow 0.5s ease;
+}
+
+.duelo-final-bloque.fase-prep {
+    background: linear-gradient(135deg, #F3E5F5 0%, #EDE7F6 100%);
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.15);
+}
+
+.duelo-final-bloque.turno-a {
+    background: linear-gradient(135deg, var(--c-azul) 0%, #1565C0 100%);
+    box-shadow: 0 8px 20px rgba(33, 150, 243, 0.35);
+}
+
+.duelo-final-bloque.turno-b {
+    background: linear-gradient(135deg, var(--c-naranja) 0%, #E65100 100%);
+    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.35);
+}
+
+/* Nombre del participante activo */
+.duelo-final-quien {
+    font-size: 0.9em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    color: var(--c-violeta);
+    word-break: break-word;
+}
+
+.duelo-final-bloque.turno-a .duelo-final-quien,
+.duelo-final-bloque.turno-b .duelo-final-quien {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Contador grande */
+.duelo-final-display {
+    font-size: clamp(3em, 9vw, 4.5em);
+    font-weight: 700;
+    color: var(--c-violeta);
+    text-shadow: 3px 3px 0 rgba(156, 39, 176, 0.15);
+    line-height: 1;
+}
+
+.duelo-final-bloque.turno-a .duelo-final-display,
+.duelo-final-bloque.turno-b .duelo-final-display {
+    color: white;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Aviso de urgencia: el número pulsa (reutiliza @keyframes palabraPulso) */
+.duelo-final-display.crono-urgente {
+    animation: palabraPulso 0.4s ease-in-out infinite;
+    color: #FFEE58;
+}
+
+/* Indicador de fase ("Fase 2 de 4 — Exposición A") */
+.duelo-final-fase-info {
+    font-size: 0.82em;
+    margin-top: 6px;
+    color: var(--c-texto-suave);
+}
+
+.duelo-final-bloque.turno-a .duelo-final-fase-info,
+.duelo-final-bloque.turno-b .duelo-final-fase-info {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+/* ---------- Tabla de réplicas del duelo final ---------- */
+.duelo-final-replicas-tabla {
+    margin-top: 16px;
+    border: 3px solid var(--c-violeta);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+/* Reutiliza .replica-fila, .replica-nombre y .palitos-marcas de Palabra Caliente.
+   Solo necesitamos sobreescribir los colores de los palitos según fila. */
+.replica-fila {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+}
+
+.replica-fila-a {
+    background: linear-gradient(90deg, #E3F2FD 0%, white 100%);
+    border-bottom: 2px solid rgba(156, 39, 176, 0.2);
+}
+
+.replica-fila-b {
+    background: linear-gradient(90deg, #FFF3E0 0%, white 100%);
+}
+
+.replica-nombre {
+    font-weight: 700;
+    font-size: 0.82em;
+    min-width: 56px;
+    color: var(--c-texto-suave);
+    word-break: break-word;
+    max-width: 90px;
+}
+
+.replica-fila-a .replica-nombre { color: var(--c-azul); }
+.replica-fila-b .replica-nombre { color: var(--c-naranja); }
+
+/* Palitos de réplica: azul para fila A, naranja para fila B */
+.replica-fila-a .palito { background: var(--c-azul); }
+.replica-fila-b .palito { background: var(--c-naranja); }
+
+/* ─────────────────────────────────────────────────────────────────
+   Final 4 — El Minuto de Oro
+   Dos cronómetros en estrella dorada, uno por equipo finalista.
+   La forma de estrella se crea con clip-path en el pseudo-elemento
+   ::before. El span del tiempo queda sobre él (z-index: 1) para no
+   ser recortado por el clip-path.
+   ───────────────────────────────────────────────────────────────── */
+
+/* Bloque de sorteo aleatorio de equipos */
+.minuto-oro-asignar {
+    text-align: center;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, rgba(255,215,0,0.13), rgba(255,193,7,0.05));
+    border: 2px dashed rgba(255, 193, 7, 0.55);
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+}
+
+/* Contenedor de las dos estrellas — flex row, se envuelve en móvil */
+.minuto-oro-cronos {
+    display: flex;
+    gap: 3rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 1.5rem 0;
+}
+
+/* Tarjeta individual: estrella + nombre + botones, en columna centrada */
+.minuto-oro-equipo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 220px;
+    max-width: 300px;
+}
+
+/* Contenedor de la estrella.
+   ::before dibuja la forma; el display del tiempo va encima con z-index.
+   filter: drop-shadow sigue el contorno del clip-path (no la caja). */
+.estrella-wrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 6px 18px rgba(255, 200, 0, 0.55));
+}
+
+/* La estrella: clip-path de 10 puntos (5 puntas, 5 entrantes).
+   La transición permite el cambio de color suave al terminar. */
+.estrella-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #FFD740;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    transition: background 0.5s ease;
+}
+
+/* Cuando el cronómetro llega a 0 la estrella se vuelve verde */
+.estrella-wrapper.terminada {
+    filter: drop-shadow(0 6px 18px rgba(76, 175, 80, 0.6));
+}
+.estrella-wrapper.terminada::before {
+    background: var(--c-verde);
+}
+
+/* El display del tiempo: encima de la estrella (z-index > 0).
+   Aquí va el "01:00" y los cambios de color de urgencia. */
+.minuto-oro-display {
+    position: relative;
+    z-index: 1;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 2.3rem;
+    font-weight: 800;
+    color: #1a1a2e;
+    letter-spacing: -0.03em;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.5);
+}
+
+/* Últimos 10 s: el número se vuelve rojo y pulsa */
+.minuto-oro-display.crono-final {
+    color: #c62828;
+    animation: palabraPulso 0.5s ease-in-out infinite alternate;
+}
+
+/* Nombre del equipo bajo la estrella */
+.minuto-oro-nombre {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--c-texto);
+    text-align: center;
+    padding: 0.3rem 1.2rem;
+    background: rgba(255, 215, 0, 0.2);
+    border-radius: 20px;
+    border: 2px solid rgba(255, 193, 7, 0.45);
+    max-width: 200px;
+    word-break: break-word;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+    .sorteo-asides { width: 100%; position: static; }
+    .contenedor-principal { flex-direction: column; }
+    .form-puntuar { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 700px) {
+    .form-equipo .alumnos-grid { grid-template-columns: 1fr; }
+    .form-puntuar { grid-template-columns: 1fr; }
+    canvas { max-width: 240px; max-height: 240px; }
+    .ranking-fila { grid-template-columns: 50px 1fr auto; padding: 12px; }
+    .info-evento { flex-direction: column; align-items: center; }
+    .header-contenido { padding: 18px; }
+    .duelo-asignar-grid { grid-template-columns: 1fr; }
+    .duelo-asignar .duelo-vs { padding: 8px 0; }
+}
