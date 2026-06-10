@@ -13,7 +13,7 @@
     /* — Colores semánticos — */
     --c-azul:       #2196F3;
     --c-azul-claro: #64B5F6;
-    --c-aazul:   var(--goose-light);
+    --c-azul:    var(--goose-light);
     --c-rojo:       #F44336;
     --c-rosa:       #FF6FA3;
     --c-verde:      #4CAF50;
@@ -197,7 +197,7 @@ main {
     border-radius: var(--radio);
     padding: 24px;
     box-shadow: var(--sombra);
-    border-top: 6px solid var(--c-aazul);
+    border-top: 6px solid var(--c-azul);
 }
 
 h2 {
@@ -303,11 +303,12 @@ select { cursor: pointer; }
 .cronometro-container,
 .fabrica-crono,
 .duelo-crono,
-.decla-crono {
+.decla-crono,
+#crono-overlay-body #duelo-final-panel {
     position: relative;
-    padding: 24px;
+    padding: 32px;
     width: 100%;
-    max-width: 700px;
+    max-width: 900px;
     background: linear-gradient(160deg, var(--goose-mid) 0%, #081724 100%);
     border-radius: 24px;
     margin: auto;
@@ -323,9 +324,10 @@ select { cursor: pointer; }
     margin-top: 18px;
 }
 
-.cronometro {
+.cronometro,
+#crono-overlay-body .duelo-final-display {
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: clamp(5.5rem, 15vw, 9.5rem);
+    font-size: clamp(8rem, 25vw, 16rem);
     font-weight: 900;
     line-height: 1;
     letter-spacing: 6px;
@@ -724,7 +726,7 @@ canvas {
 }
 
 .palabra-cuenta-display {
-    font-size: clamp(3em, 9vw, 4.5em);
+    font-size: clamp(6em, 18vw, 11em);
     font-weight: 700;
     color: white;
     text-shadow: 3px 3px 0 rgba(0,0,0,0.15);
@@ -890,6 +892,76 @@ canvas {
 .resultado-dupla {
     background: linear-gradient(135deg, #9ddfff 0%, #165893 100%);
 }
+
+.resultado-duelo-final-dupla {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #1a6fc4 0%, #0d1b2a 100%);
+    border-radius: 16px;
+}
+
+.resultado-duelo-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    flex: 1;
+    min-width: 120px;
+}
+
+.resultado-duelo-equipo {
+    font-size: .85rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.65);
+    text-align: center;
+}
+
+.resultado-duelo-vs {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: rgba(255,255,255,0.5);
+}
+
+.resultado-seleccion-duelo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .75rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #1a6fc4 0%, #0d1b2a 100%);
+    border-radius: 16px;
+    text-align: center;
+}
+
+.resultado-duelo-img {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid rgba(255,255,255,0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.resultado-duelo-etiqueta {
+    font-size: .85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: rgba(255,255,255,0.65);
+}
+
+.resultado-duelo-nombre {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 800;
+    color: white;
+    line-height: 1.1;
+}
 .resultado-dupla strong {
     color: #ebeef1;
 }
@@ -922,11 +994,11 @@ canvas {
     padding: 14px 26px;
 }
 
-.resultado-genero  { background: #B3E5FC; }
+.resultado-genero  { background: #B3E5FC; font-size: 1.5em; }
 .resultado-simple  { background: #E1BEE7; }
-.resultado-palabra { background: var(--goose-blue) }
+.resultado-palabra { background: #BBDEFB; color: #0d2745; font-size: 1.5em; }
 .resultado-palabra strong {
-    color: #0f2d4a;
+    color: #0d2745;
     display: block;
     margin-bottom: 6px;
 }
@@ -1006,6 +1078,370 @@ canvas {
     font-family: 'Baloo 2', sans-serif;
     color: var(--goose-mid);
     margin-bottom: 4px;
+}
+
+.sesion-clasificacion-card { margin-bottom: 1rem; }
+
+.sorteo-filtros {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-top: .5rem;
+}
+.sorteo-filtros .campo { flex: 1 1 140px; min-width: 130px; }
+
+.sesion-equipos-info {
+    margin-top: .6rem;
+    font-size: .85rem;
+    color: var(--c-azul);
+    font-weight: 600;
+    min-height: 1.2em;
+}
+
+
+.sala-selector-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5rem;
+    margin-top: .75rem;
+    flex-wrap: wrap;
+}
+
+.sala-selector-campo {
+    flex: 0 0 auto;
+    min-width: 200px;
+}
+
+.sala-contadores {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    padding-bottom: 2px;
+}
+
+.sala-contador {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--azul-fondo, #e8f0fe);
+    border-radius: 12px;
+    padding: 6px 14px;
+    min-width: 72px;
+    gap: 2px;
+}
+
+.sala-contador-nombre {
+    font-size: 0.72em;
+    font-weight: 600;
+    color: var(--azul-principal, #1a6fc4);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.sala-contador-num {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: var(--azul-principal, #1a6fc4);
+    line-height: 1;
+}
+
+/* ── Popup gigante de cronómetro ── */
+#crono-gigante {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: linear-gradient(160deg, #1a2a5e 0%, #081724 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+}
+#crono-gigante.hidden { display: none; }
+
+#crono-gigante-cerrar {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+}
+
+/* ── Estrella gigante para Minuto de Oro ── */
+#crono-gigante-timer-area {
+    display: grid;
+    place-items: center;
+}
+#crono-gigante-timer-area > * {
+    grid-area: 1 / 1; /* apilar estrella y display en la misma celda */
+}
+
+#crono-gigante-estrella {
+    width: 75vmin;
+    height: 75vmin;
+    display: none;
+    position: relative;
+    filter: drop-shadow(0 10px 50px rgba(255, 200, 0, 0.7));
+}
+#crono-gigante-estrella::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #FFD740;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    transition: background 0.5s ease;
+}
+#crono-gigante-estrella.terminada {
+    filter: drop-shadow(0 10px 50px rgba(76, 175, 80, 0.7));
+}
+#crono-gigante-estrella.terminada::before {
+    background: var(--c-verde);
+}
+
+#crono-gigante.modo-estrella #crono-gigante-estrella {
+    display: block;
+}
+
+#crono-gigante-display {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(8rem, 26vw, 28rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 4px;
+    color: white;
+    text-shadow: 0 0 60px rgba(26, 111, 196, 0.4);
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+}
+/* en modo estrella el display es más pequeño y oscuro */
+#crono-gigante.modo-estrella #crono-gigante-display {
+    font-size: clamp(3rem, 13vmin, 9rem);
+    color: #1a1a2e;
+    text-shadow: none;
+    letter-spacing: 2px;
+}
+#crono-gigante-display.crono-final {
+    color: var(--c-rojo);
+    text-shadow: 4px 4px 0 #FFCDD2;
+    animation: pulso 0.6s ease-in-out infinite;
+}
+#crono-gigante.modo-estrella #crono-gigante-display.crono-final {
+    color: #b71c1c;
+    text-shadow: none;
+}
+#crono-gigante-display.crono-minimo {
+    color: var(--c-verde);
+    text-shadow: 4px 4px 0 #C8E6C9;
+}
+#crono-gigante.modo-estrella #crono-gigante-display.crono-minimo {
+    color: #1b5e20;
+    text-shadow: none;
+}
+
+#crono-gigante-label {
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    color: rgba(255, 255, 255, 0.55);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+/* ── Pantalla intro de prueba ── */
+#intro-prueba-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: linear-gradient(160deg, #1a2a5e 0%, #081724 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+#intro-prueba-overlay.hidden { display: none; }
+
+.intro-volver {
+    position: fixed;
+    top: 1.5rem;
+    left: 1.5rem;
+}
+
+.intro-prueba-contenido {
+    max-width: 760px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.intro-prueba-numero {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin: 0;
+}
+
+.intro-prueba-contenido h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(2.5rem, 7vw, 5rem);
+    font-weight: 900;
+    color: white;
+    line-height: 1.1;
+    margin: 0;
+}
+
+.intro-prueba-contenido p#intro-prueba-descripcion {
+    font-size: clamp(1rem, 2.5vw, 1.35rem);
+    color: rgba(255,255,255,0.7);
+    line-height: 1.7;
+    max-width: 600px;
+    margin: 0;
+}
+
+.btn-grande {
+    font-size: 1.2rem;
+    padding: 0.85rem 2.5rem;
+    margin-top: 0.5rem;
+}
+
+.prueba-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #293180;
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+.prueba-overlay-barra {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
+#crono-overlay {
+    z-index: 10000;
+}
+
+#crono-overlay-body {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+    align-items: flex-start;
+}
+
+/* crono-contenido ocupa siempre la fila completa */
+#crono-overlay-body #crono-contenido {
+    flex: 0 0 100%;
+    min-width: 0;
+}
+
+/* Historial al lado izquierdo */
+#crono-overlay-body #historial-panel {
+    flex: 0 0 280px;
+    position: sticky;
+    top: 1rem;
+}
+
+/* Cronómetro de Patata Caliente ocupa el espacio restante */
+#crono-overlay-body #palabra-crono-panel {
+    flex: 1;
+    min-width: 320px;
+}
+
+#prueba-contenido {
+    flex: 1;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ── Panel de emparejamiento fase final ── */
+.emp-resultado {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+    width: 100%;
+    justify-content: center;
+}
+
+.emp-bloque {
+    flex: 1 1 260px;
+    background: var(--azul-fondo, #f0f4ff);
+    border-radius: 14px;
+    padding: 1.5rem 2rem;
+    min-width: 0;
+    text-align: center;
+}
+
+.emp-titulo {
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--azul-principal, #1a6fc4);
+    margin-bottom: 1rem;
+}
+
+.emp-equipo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-bottom: .4rem;
+}
+
+.emp-nombre {
+    font-weight: 700;
+    font-size: 3rem;
+    word-break: break-word;
+    line-height: 1.1;
+}
+
+.emp-orador {
+    font-size: 1.1rem;
+    color: #555;
+    white-space: nowrap;
+}
+
+.emp-sep {
+    font-size: 1.2rem;
+    color: #888;
+    margin: .5rem 0;
+}
+
+.emp-acciones {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    justify-content: center;
+}
+
+.equipo-sala-tag {
+    display: inline-block;
+    font-size: 0.75em;
+    font-weight: 600;
+    background: var(--azul-fondo, #e8f0fe);
+    color: var(--azul-principal, #1a6fc4);
+    border-radius: 999px;
+    padding: 1px 9px;
+    margin-left: 8px;
+    vertical-align: middle;
 }
 
 .equipo-card .equipo-alumnos {
@@ -1245,7 +1681,7 @@ canvas {
 
 .detalle-cabecera, .detalle-fila {
     display: grid;
-    grid-template-columns: 2fr 1.5fr 0.8fr 1.8fr 0.7fr;
+    grid-template-columns: 2fr 1.5fr 0.8fr 1.8fr 0.5fr 0.7fr 1.2fr 0.5fr;
     gap: 8px;
     padding: 8px 12px;
     align-items: center;
@@ -1391,6 +1827,126 @@ footer {
     to   { transform: scale(1.07); }
 }
 
+/* ── Popup sorteo de orden de equipos ── */
+.sorteo-orden-contenido {
+    background: linear-gradient(160deg, #1a2a5e 0%, #081724 100%);
+    border-radius: 28px;
+    padding: 3rem 5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+    min-width: 340px;
+}
+
+.sorteo-orden-reloj {
+    width: 130px;
+    height: 130px;
+}
+
+.sorteo-reloj-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.sorteo-reloj-cara {
+    fill: rgba(255,255,255,0.07);
+    stroke: rgba(255,255,255,0.25);
+    stroke-width: 2;
+}
+
+.sorteo-reloj-progreso {
+    fill: none;
+    stroke: var(--goose-accent);
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-dasharray: 276.46;
+    stroke-dashoffset: 0;
+    transform-origin: 50px 50px;
+    transform: rotate(-90deg);
+    transition: stroke-dashoffset 1s linear;
+}
+
+.sorteo-reloj-aguja-min {
+    stroke: rgba(255,255,255,0.4);
+    stroke-width: 3;
+    stroke-linecap: round;
+    transform-origin: 50px 50px;
+}
+
+.sorteo-reloj-aguja-seg {
+    stroke: var(--goose-accent);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    transform-origin: 50px 50px;
+    transition: transform 1s linear;
+}
+
+.sorteo-reloj-centro {
+    fill: white;
+}
+
+.sorteo-orden-cuenta {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 5rem;
+    font-weight: 900;
+    color: white;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.sorteo-orden-cuenta.pulso {
+    transform: scale(1.25);
+}
+
+.sorteo-orden-nombre {
+    font-family: 'Baloo 2', cursive;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 800;
+    color: var(--goose-accent);
+    text-align: center;
+    animation: hazme-pulso 0.55s ease-in-out infinite alternate;
+}
+
+.sorteo-orden-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+}
+
+/* ── Chip con turno asignado ── */
+.hazme-equipo-chip-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.hazme-equipo-turno {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--c-azul);
+    text-transform: uppercase;
+}
+
+.hazme-equipo-chip.turno-primero {
+    background: linear-gradient(135deg, var(--goose-accent) 0%, #29307e 100%);
+    color: #e6e8e9;
+    box-shadow: 0 0 18px #64b5f6, 0 4px 12px #64b5f6;
+    transform: scale(1.06);
+}
+
+.hazme-equipo-chip-wrap:has(.turno-primero) .hazme-equipo-turno {
+    color: #293180;
+    font-size: 0.85rem;
+}
+
 .hazme-selector-estado {
     font-weight: 600;
     color: var(--c-texto-suave);
@@ -1405,7 +1961,7 @@ footer {
     position: fixed;
     inset: 0;
     background: rgba(13, 27, 42, 0.82);
-    z-index: 9999;
+    z-index: 11000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1414,10 +1970,11 @@ footer {
 .hazme-popup-contenido {
     background: white;
     border-radius: 28px;
-    padding: 3.5rem 4.5rem;
+    padding: 5rem 6rem;
     text-align: center;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
-    max-width: 90vw;
+    max-width: 95vw;
+    width: 700px;
     animation: hazme-popup-entrada 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     border-top: 8px solid #293180;
 }
@@ -1514,6 +2071,17 @@ footer {
     margin-bottom: 12px;
 }
 
+#crono-overlay-body #duelo-final-panel {
+    flex: 1;
+    min-width: 0;
+    border-top: none;
+}
+
+#crono-overlay-body #duelo-final-panel h3 {
+    color: rgba(255,255,255,0.7);
+    border-bottom-color: rgba(255,255,255,0.15);
+}
+
 /* ---------- Bloque de color del turno activo ---------- */
 .duelo-final-bloque {
     border-radius: 16px;
@@ -1524,8 +2092,8 @@ footer {
 }
 
 .duelo-final-bloque.fase-prep {
-    background: linear-gradient(135deg, #F3E5F5 0%, #EDE7F6 100%);
-    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.15);
+    background: transparent;
+    box-shadow: none;
 }
 
 .duelo-final-bloque.turno-a {
@@ -1554,11 +2122,12 @@ footer {
 }
 
 .duelo-final-display {
-    font-size: clamp(3em, 9vw, 4.5em);
-    font-weight: 700;
+    font-size: clamp(8rem, 25vw, 16rem);
+    font-weight: 900;
     color: var(--goose-light);
-    text-shadow: 3px 3px 0 rgba(156, 39, 176, 0.15);
+    text-shadow: 0 0 40px rgba(26, 111, 196, 0.3);
     line-height: 1;
+    letter-spacing: 6px;
 }
 
 .duelo-final-bloque.turno-a .duelo-final-display,
@@ -1636,7 +2205,7 @@ footer {
 
 .minuto-oro-cronos {
     display: flex;
-    gap: 3rem;
+    gap: 1.5rem;
     justify-content: center;
     flex-wrap: wrap;
     margin: 1.5rem 0;
@@ -1648,14 +2217,14 @@ footer {
     align-items: center;
     gap: 0.75rem;
     flex: 1;
-    min-width: 220px;
-    max-width: 300px;
+    min-width: 180px;
+    max-width: 240px;
 }
 
 .estrella-wrapper {
     position: relative;
-    width: 250px;
-    height: 250px;
+    width: 180px;
+    height: 180px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1680,10 +2249,10 @@ footer {
 
 .minuto-oro-display {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     font-family: 'Baloo 2', sans-serif;
-    font-size: 2.3rem;
-    font-weight: 800;
+    font-size: clamp(2rem, 4vw, 7rem);
+    font-weight: 700;
     color: #1a1a2e;
     letter-spacing: -0.03em;
     text-shadow: 0 1px 3px rgba(255, 255, 255, 0.5);
@@ -1802,8 +2371,8 @@ footer {
     #detalle-tabla { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .detalle-cabecera,
     .detalle-fila {
-        min-width: 420px;
-        grid-template-columns: 1.8fr 1.2fr 0.6fr 1.4fr 0.6fr;
+        min-width: 480px;
+        grid-template-columns: 1.8fr 1.2fr 0.6fr 1.4fr 0.4fr 0.6fr 0.8fr 0.4fr;
         font-size: 0.78em;
         gap: 4px;
         padding: 6px 8px;
@@ -1819,14 +2388,15 @@ footer {
 
     /* — Logos: fila centrada + texto apilado debajo — */
     .header-contenido {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-        gap: 0;
-        padding: 12px 10px;
-        border-radius: 12px;
-        text-align: center;
+    position: relative;
+    background: white;
+    border: 4px solid #97c7ed;
+    border-radius: var(--radio);
+    padding: 24px 28px;
+    box-shadow: var(--sombra);
+    /* max-width: 1200px; */
+    margin: 10px auto;
+    width: 100%;
     }
     .logo-empresa {
         width: 90px;
@@ -1922,7 +2492,7 @@ footer {
 
     /* — Minuto de Oro — */
     .estrella-wrapper     { width: 130px; height: 130px; }
-    .minuto-oro-display   { font-size: 1.8rem; }
+    .minuto-oro-display   { font-size: 3rem; }
     .minuto-oro-cronos    { gap: 1.2rem; }
 
     /* — Popups — */
@@ -1932,7 +2502,7 @@ footer {
 
     /* Detalle: ocultar columna "Sala" (3ª) en móvil muy estrecho */
     .detalle-cabecera,
-    .detalle-fila         { grid-template-columns: 1.8fr 1.2fr 1.6fr 0.7fr; min-width: 0; font-size: 0.74em; }
+    .detalle-fila         { grid-template-columns: 1.8fr 1.2fr 1.6fr 0.5fr 0.5fr 0.7fr 1fr 0.4fr; min-width: 0; font-size: 0.74em; }
     .detalle-cabecera > *:nth-child(3),
     .detalle-fila > *:nth-child(3) { display: none; }
 }
@@ -1946,7 +2516,7 @@ footer {
     position: fixed;
     inset: 0;
     background: rgba(13, 27, 42, 0.88);
-    z-index: 9999;
+    z-index: 11000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1955,11 +2525,11 @@ footer {
 .duelo-personajes-popup-contenido {
     background: white;
     border-radius: 28px;
-    padding: 2.5rem 3rem;
+    padding: 3.5rem 4rem;
     text-align: center;
     box-shadow: 0 24px 70px rgba(0,0,0,0.40);
-    max-width: 92vw;
-    width: 720px;
+    max-width: 96vw;
+    width: 960px;
     animation: hazme-popup-entrada 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     border-top: 8px solid var(--c-azul);
 }
@@ -2008,13 +2578,13 @@ footer {
 
 .duelo-popup-equipo-final {
     font-family: 'Fredoka', cursive;
-    font-size: 0.9rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: white;
     background: #293180;
     border-radius: 20px;
-    padding: 0.3rem 0.9rem;
-    margin-top: 0.2rem;
+    padding: 0.4rem 1.2rem;
+    margin-top: 0.4rem;
 }
 
 .duelo-popup-elegir-label {
@@ -2030,8 +2600,8 @@ footer {
 }
 
 .duelo-personajes-popup-img {
-    width: 130px;
-    height: 130px;
+    width: 190px;
+    height: 190px;
     object-fit: cover;
     border-radius: 50%;
     border: 5px solid var(--c-azul-claro);
@@ -2084,24 +2654,11 @@ footer {
     position: fixed;
     inset: 0;
     background: rgba(13, 27, 42, 0.82);
-    z-index: 9999;
+    z-index: 11000;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-
-.fabrica-popup-contenido {
-    background: white;
-    border-radius: 28px;
-    padding: 3rem 3.5rem;
-    text-align: center;
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
-    max-width: 520px;
-    width: 92vw;
-    animation: hazme-popup-entrada 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border-top: 8px solid var(--c-violeta);
-}
-
 
 .fabrica-popup-titulo {
     font-family: 'Baloo 2', cursive;
@@ -2200,4 +2757,15 @@ footer {
     font-weight: 700;
     min-height: 2rem;
     transition: color 0.3s;
+}
+.fabrica-popup-contenido {
+    background: white;
+    border-radius: 28px;
+    padding: 4rem 5rem;
+    text-align: center;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+    max-width: 750px;
+    width: 95vw;
+    animation: hazme-popup-entrada 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-top: 8px solid #2743b0;
 }

@@ -1,146 +1,218 @@
 {
   "equipos": [
     {
-      "id": "eq_1779894349726",
+      "id": "eq_1780901328127",
       "nombre": "Brewster",
+      "sala": "Auditorio",
       "alumnos": [
-        "Anna Lyn Santos Miller",
-        "Luciana Méndez León Mecutchen",
-        "Pepe Sanitas Palacios",
-        "Kairo Malikian Pérez"
+        "Marta Martin",
+        "Romero Santos",
+        "Patricia Gómez",
+        "Samuel Ortiz",
+        "Sara Parker",
+        "Samanta Ro"
       ]
     },
     {
-      "id": "eq_1779894539271",
+      "id": "eq_1780901365027",
+      "nombre": "Asunción Rincón",
+      "sala": "Auditorio",
+      "alumnos": [
+        "Rosa Ramos",
+        "Maria Ruiz",
+        "Esteban Perez",
+        "Maximo Lopez",
+        "Tomas Alvarez",
+        "Antonio Perez"
+      ]
+    },
+    {
+      "id": "eq_1780901434771",
+      "nombre": "Claudio Moyano",
+      "sala": "Auditorio",
+      "alumnos": [
+        "Tamara Gonzalez",
+        "Hugo Casa",
+        "Aitor Garcia",
+        "Francisco Antiller",
+        "Macarena Miranda",
+        "Lucas Hernandez"
+      ]
+    },
+    {
+      "id": "eq_1780901528046",
+      "nombre": "Claudio Moyano",
+      "sala": "Ludoteca",
+      "alumnos": [
+        "Julio Fernandez",
+        "Luisa Mejilas",
+        "Sean Smith",
+        "Neizan Perea",
+        "Martina Cabello",
+        "Gloria Martin"
+      ]
+    },
+    {
+      "id": "eq_1780901599190",
+      "nombre": "Divina Pastora B",
+      "sala": "Ludoteca",
+      "alumnos": [
+        "Ruben De la Rosa",
+        "Roberto Zapatero",
+        "Raul Escudero",
+        "Marina Moreno",
+        "Pedro Gil",
+        "Manuel Perez"
+      ]
+    },
+    {
+      "id": "eq_1780901647644",
       "nombre": "Esclavas Chamberí A",
+      "sala": "Ludoteca",
       "alumnos": [
-        "Paula Pérez Ramos",
-        "Helena Prada Gómez",
-        "Carmen Núñez Romero",
-        "Hugo Riesco Ramos"
+        "Javier Rangel",
+        "Lucia Rencio",
+        "Alonso Vera",
+        "Laura Riego",
+        "Dolores Vargas",
+        "Israel Rodriguez"
       ]
     },
     {
-      "id": "eq_1779894565754",
-      "nombre": "Esclavas Chamberí B",
+      "id": "eq_1780902531987",
+      "nombre": "María Inmaculada B",
+      "sala": "Poli 2",
       "alumnos": [
-        "Sara Rivera Jáñez",
-        "Daniela Sánchez Quillón",
-        "Nicolas Hernández Molina",
-        "George Nealdrett Alonso"
+        "Cayetano Rodriguez",
+        "Mariana Vega",
+        "Magadalena Perez",
+        "Cristina Romero",
+        "Esteban Luca",
+        "Timothy Blake"
       ]
     },
     {
-      "id": "eq_1779894590888",
-      "nombre": "Esclavas Chamberí C",
+      "id": "eq_1780902604387",
+      "nombre": "Rufino Blanco A",
+      "sala": "Poli 2",
       "alumnos": [
-        "Nicolás Matey Teja",
-        "Juan Sebastián Grimaldo Márquez",
-        "Zoe Silvestre Alberola",
-        "Chloe Poza Cardo"
+        "Ruben Abad",
+        "Sergio Amaya",
+        "Gema Reyes",
+        "Amparo Luna",
+        "Luz Cordero",
+        "Enrique Perez"
       ]
     },
     {
-      "id": "eq_1779894648988",
-      "nombre": "María Inmaculada A",
+      "id": "eq_1780905995440",
+      "nombre": "Rufino Blanco A",
+      "sala": "Poli 2",
       "alumnos": [
-        "Sol Arés Aniz",
-        "Lucas Parkes Jorge",
-        "Alejandra García Arribas",
-        "Sergio Santos Cebollada"
+        "Marta",
+        "Maria",
+        "Mario",
+        "Pedro",
+        "Mtias",
+        "Ruben"
       ]
     }
   ],
   "puntuaciones": [
     {
-      "id": "p_1780305736722",
-      "equipoId": "eq_1779894349726",
+      "id": "p_1780904678710",
+      "equipoId": "eq_1780901328127",
       "alumnoIdx": 0,
       "alumnoNombreOtro": null,
       "prueba": "hazme-fan",
       "sala": "1",
-      "criterios": {
-        "opinion": 2,
-        "emocion": 2,
-        "razones": 2,
-        "organizar": 2,
-        "enganchar": 2
-      },
-      "total": 9,
-      "aviso": "falta-leve",
-      "fecha": "2026-06-01T09:22:16.722Z"
-    },
-    {
-      "id": "p_1780379433034",
-      "equipoId": "eq_1779894539271",
-      "alumnoIdx": 0,
-      "alumnoNombreOtro": null,
-      "prueba": "hazme-fan",
-      "sala": "1",
+      "ronda": "1",
       "criterios": {
         "opinion": 1,
-        "razones": 1,
-        "enganchar": 1,
-        "organizar": 1,
-        "emocion": 1
-      },
-      "total": 5,
-      "aviso": "aviso",
-      "fecha": "2026-06-02T05:50:33.034Z"
-    },
-    {
-      "id": "p_1780379460317",
-      "equipoId": "eq_1779894565754",
-      "alumnoIdx": 0,
-      "alumnoNombreOtro": null,
-      "prueba": "hazme-fan",
-      "sala": "1",
-      "criterios": {
-        "opinion": 2,
+        "emocion": 2,
         "razones": 2,
-        "emocion": 1,
-        "enganchar": 1,
-        "organizar": 1
+        "enganchar": 2,
+        "organizar": 2
       },
-      "total": 6,
-      "aviso": "falta-leve",
-      "fecha": "2026-06-02T05:51:00.317Z"
+      "total": 9,
+      "aviso": "aviso",
+      "fecha": "2026-06-08T07:44:38.710Z"
     },
     {
-      "id": "p_1780379483720",
-      "equipoId": "eq_1779894590888",
-      "alumnoIdx": 0,
-      "alumnoNombreOtro": null,
-      "prueba": "hazme-fan",
-      "sala": "1",
-      "criterios": {
-        "opinion": 3,
-        "razones": 3,
-        "emocion": 3,
-        "enganchar": 3,
-        "organizar": 3
-      },
-      "total": 15,
-      "aviso": null,
-      "fecha": "2026-06-02T05:51:23.720Z"
-    },
-    {
-      "id": "p_1780379509419",
-      "equipoId": "eq_1779894648988",
+      "id": "p_1780904695768",
+      "equipoId": "eq_1780901365027",
       "alumnoIdx": 0,
       "alumnoNombreOtro": null,
       "prueba": "fabrica-historias",
       "sala": "1",
+      "ronda": "1",
       "criterios": {
-        "inicio": 4,
-        "nudo": 4,
-        "desenlace": 4,
-        "personajes": 4,
-        "emocion": 4
+        "inicio": 1,
+        "nudo": 1,
+        "desenlace": 1,
+        "personajes": 1,
+        "emocion": 2
       },
-      "total": 20,
+      "total": 5,
+      "aviso": "falta-leve",
+      "fecha": "2026-06-08T07:44:55.768Z"
+    },
+    {
+      "id": "p_1780906435347",
+      "equipoId": "eq_1780901328127",
+      "alumnoIdx": 0,
+      "alumnoNombreOtro": null,
+      "prueba": "hazme-fan",
+      "sala": "1",
+      "ronda": "1",
+      "criterios": {
+        "opinion": 1,
+        "razones": 1,
+        "emocion": 1,
+        "enganchar": 1,
+        "organizar": 1
+      },
+      "total": 5,
       "aviso": null,
-      "fecha": "2026-06-02T05:51:49.419Z"
+      "fecha": "2026-06-08T08:13:55.347Z"
+    },
+    {
+      "id": "p_1780906900769",
+      "equipoId": "eq_1780901647644",
+      "alumnoIdx": 1,
+      "alumnoNombreOtro": null,
+      "prueba": "hazme-fan",
+      "sala": "2",
+      "ronda": "1",
+      "criterios": {
+        "opinion": 2,
+        "razones": 2,
+        "emocion": 2,
+        "enganchar": 2,
+        "organizar": 2
+      },
+      "total": 10,
+      "aviso": null,
+      "fecha": "2026-06-08T08:21:40.769Z"
+    },
+    {
+      "id": "p_1780906939917",
+      "equipoId": "eq_1780901434771",
+      "alumnoIdx": 0,
+      "alumnoNombreOtro": null,
+      "prueba": "hazme-fan",
+      "sala": "2",
+      "ronda": "1",
+      "criterios": {
+        "opinion": 1,
+        "razones": 1,
+        "emocion": 2,
+        "organizar": 2,
+        "enganchar": 2
+      },
+      "total": 8,
+      "aviso": null,
+      "fecha": "2026-06-08T08:22:19.917Z"
     }
   ]
 }

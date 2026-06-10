@@ -43,18 +43,51 @@ $PRUEBAS = [
     ['id'=>'minuto-oro',             'label'=>'Final 4 — Minuto de Oro'],
 ];
 
+$CRITERIOS_NOMBRES = [
+    'hazme-fan'              => ['Contenido y argumentos','Persuasión y emoción','Expresión oral','Lenguaje corporal','Organización del discurso'],
+    'fabrica-historias'      => ['Creatividad','Estructura narrativa','Coherencia','Expresión oral','Lenguaje corporal y expresividad'],
+    'voces-derecho'          => ['Comprensión del artículo','Razonamiento y argumentos','Organización del discurso','Expresión oral','Lenguaje corporal y seguridad'],
+    'duelo-personajes'       => ['Argumentación comparativa','Defensa del personaje','Capacidad de respuesta','Expresión oral','Actitud y respeto'],
+    'declamacion'            => ['Expresividad e intención','Uso de la voz','Ritmo y pausas','Comprensión del texto','Seguridad y presencia escénica'],
+    'palabra-caliente'       => ['Escucha y adaptación','Coherencia de la intervención','Aportación de ideas','Expresión oral','Seguridad y fluidez'],
+    'duelo-personajes-final' => ['Argumentación comparativa','Defensa del personaje','Capacidad de réplica','Escucha activa','Expresión oral'],
+    'minuto-oro'             => ['Capacidad de persuasión','Estructura del discurso','Expresión oral y seguridad','Creatividad y originalidad','Trabajo en equipo y respeto'],
+];
+
+$CRITERIOS_IDS = [
+    'hazme-fan'              => ['opinion','razones','emocion','enganchar','organizar'],
+    'fabrica-historias'      => ['inicio','nudo','desenlace','personajes','emocion'],
+    'voces-derecho'          => ['explicar','argumentar','defender','reflexionar','lenguaje'],
+    'duelo-personajes'       => ['argumentacion','defensa','replica','expresion','actitud'],
+    'declamacion'            => ['expresividad','voz','ritmo','comprension','presencia'],
+    'palabra-caliente'       => ['escucha','coherencia','aportacion','expresion','fluidez'],
+    'duelo-personajes-final' => ['argumentacion','defensa','replica','escucha','expresion'],
+    'minuto-oro'             => ['persuasion','estructura','expresion','creatividad','respeto'],
+];
+
 // Construir secciones de datos para pasar a jsPDF
 $secciones = [];
 foreach ($PRUEBAS as $pr) {
     $registros = array_values(array_filter($puntsEq, fn($p) => $p['prueba'] === $pr['id']));
     if (!count($registros)) continue;
+    $criIds     = $CRITERIOS_IDS[$pr['id']]    ?? [];
+    $criNombres = $CRITERIOS_NOMBRES[$pr['id']] ?? [];
     $filas = [];
     foreach ($registros as $p) {
         $alumno = $p['alumnoNombreOtro']
             ?? ($eq['alumnos'][$p['alumnoIdx']] ?? ('Alumno ' . ($p['alumnoIdx'] + 1)));
-        $filas[] = ['alumno' => $alumno, 'total' => $p['total'], 'aviso' => $p['aviso'] ?? '—'];
+        $criPts = array_map(
+            fn($id) => isset($p['criterios'][$id]) ? (int)$p['criterios'][$id] : '—',
+            $criIds
+        );
+        $filas[] = [
+            'alumno'    => $alumno,
+            'criterios' => $criPts,
+            'total'     => $p['total'],
+            'aviso'     => $p['aviso'] ?? '—',
+        ];
     }
-    $secciones[] = ['label' => $pr['label'], 'filas' => $filas];
+    $secciones[] = ['label' => $pr['label'], 'criterios' => $criNombres, 'filas' => $filas];
 }
 
 // Logo embebido como base64 directamente desde el servidor
@@ -68,7 +101,7 @@ $DATA_JSON = json_encode([
     'nombre'   => $eq['nombre'],
     'secciones'=> $secciones,
     'totales'  => ['clasificacion' => $totalClasif, 'final' => $totalFinal, 'general' => $totalGen],
-], JSON_UNESCAPED_UNICODE);
+], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG);
 
 $nombre = htmlspecialchars($eq['nombre']);
 ?>
@@ -141,15 +174,26 @@ $nombre = htmlspecialchars($eq['nombre']);
             doc.text(sec.label, 16, y+5.5);
             y += 10;
 
+            const nCri = sec.criterios.length;
+            const colStyles = {};
+            for (let i = 1; i <= nCri; i++) colStyles[i] = { halign:'center', cellWidth: 18 };
+            colStyles[nCri + 1] = { halign:'center', fontStyle:'bold', cellWidth: 28 };
+            colStyles[nCri + 2] = { halign:'center', cellWidth: 22 };
+
             doc.autoTable({
                 startY: y,
                 margin: { left:14, right:14 },
-                head: [['Alumno','Puntuación','Aviso']],
-                body: sec.filas.map(f => [f.alumno, f.total+' pts', f.aviso]),
-                headStyles:    { fillColor:[58,155,213], textColor:255, fontStyle:'bold', fontSize:8 },
-                bodyStyles:    { fontSize:8, textColor:[13,43,85] },
+                head: [['Alumno', ...sec.criterios, 'Total', 'Aviso']],
+                body: sec.filas.map(f => [
+                    f.alumno,
+                    ...f.criterios,
+                    f.aviso === 'falta-leve' ? `${f.total + 1} - 1 = ${f.total}` : f.total + ' pts',
+                    f.aviso
+                ]),
+                headStyles:    { fillColor:[58,155,213], textColor:255, fontStyle:'bold', fontSize:7 },
+                bodyStyles:    { fontSize:7, textColor:[13,43,85] },
                 alternateRowStyles: { fillColor:[237,245,255] },
-                columnStyles:  { 1:{halign:'center'}, 2:{halign:'center'} },
+                columnStyles:  colStyles,
                 theme: 'grid',
             });
             y = doc.lastAutoTable.finalY + 6;

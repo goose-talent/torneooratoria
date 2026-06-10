@@ -1,32 +1,23 @@
 /* 1) CONFIGURACIÓN GLOBAL DE PRUEBAS. */
-// Filtro del ranking con distinción entre fase de clasificación y fase final 
 const FASE_CLASIFICACION = ['hazme-fan', 'fabrica-historias', 'voces-derecho', 'duelo-personajes'];
 const FASE_FINAL         = ['declamacion', 'palabra-caliente', 'duelo-personajes-final', 'minuto-oro'];
 
-// Distribución fija de equipos por sala y ronda (fase de clasificación).
-const DISTRIBUCION_SALAS = {
-    'Auditorio|1': ['Brewster', 'Divina Pastora B', 'Esclavas Chamberí B', 'La Salle San Rafael'],
-    'Ludoteca|1':  ['Claudio Moyano', 'Esclavas Chamberí C', 'María Inmaculada B', 'Rufino Blanco B'],
-    'Poli 2|1':    ['Asunción Rincón', 'Divina Pastora A', 'Esclavas Chamberí A', 'María Inmaculada A', 'Rufino Blanco A'],
-    'Auditorio|2': ['Asunción Rincón', 'Rufino Blanco A', 'Esclavas Chamberí C', 'María Inmaculada B'],
-    'Ludoteca|2':  ['Brewster', 'Esclavas Chamberí A', 'María Inmaculada A', 'Divina Pastora B'],
-    'Poli 2|2':    ['Claudio Moyano', 'Esclavas Chamberí B', 'La Salle San Rafael', 'Rufino Blanco B', 'Divina Pastora A'],
-};
+const SALAS_ORDEN = ['Auditorio', 'Ludoteca', 'Poli 2'];
 
-// Sala y ronda activas en el modo sorteos
 let salaSorteoActual  = '';
 let rondaSorteoActual = '';
+let rondaActual       = '';
 
-// Devuelve los equipos registrados que corresponden a la sala y ronda activas.
-// Sin sala/ronda seleccionada devuelve todos (fase final).
-function equiposDeSalaYRonda(sala, ronda) {
-    const clave = `${sala}|${ronda}`;
-    const nombres = DISTRIBUCION_SALAS[clave];
-    if (!nombres) return equipos;
-    return equipos.filter(e => nombres.includes(e.nombre));
+function equiposDeSalaYRonda(sala, turno) {
+    if (!sala) return equipos;
+    const turnoEfectivo = turno || '1';
+    const idx = SALAS_ORDEN.indexOf(sala);
+    if (idx === -1) return equipos;
+    const idxOrigen = ((idx - (Number(turnoEfectivo) - 1)) % 3 + 3) % 3;
+    const salaOrigen = SALAS_ORDEN[idxOrigen];
+    const filtrados = equipos.filter(e => e.sala === salaOrigen);
+    return filtrados.length ? filtrados : equipos;
 }
-
-// Configuración de cada prueba.
 
 const configuraciones = {
     'hazme-fan': {
@@ -77,7 +68,6 @@ const configuraciones = {
     }
 };
 
-// Criterios de evaluación específicos por prueba (1–4 puntos cada uno).
 const CRITERIOS_POR_PRUEBA = {
     'hazme-fan': [
         { id: 'opinion',   nombre: 'Contenido y argumentos', descripciones: { 1: 'Apenas explica por qué recomienda la obra.', 2: 'Da pocas razones o demasiado generales.', 3: 'Da razones adecuadas, aunque poco desarrolladas.', 4: 'Da razones claras, bien explicadas y personales.' } },
@@ -138,7 +128,6 @@ const CRITERIOS_POR_PRUEBA = {
     ]
 };
 
-// Devuelve los criterios de la prueba indicada (array vacío si no existe).
 function getCriteriosPrueba(prueba) {
     return CRITERIOS_POR_PRUEBA[prueba] || [];
 }
@@ -146,22 +135,17 @@ function getCriteriosPrueba(prueba) {
 
 /*
    2) ESTADO Y PERSISTENCIA ----- */
-let datosPrueba = {};       // Datos cargados desde el CSV de cada prueba.
-let usados = {};            // Resultados ya sorteados (para no repetir o avisar).
-let canvasList = [];        // Bloques { canvas, opciones, nombre, resBox } activos.
+let datosPrueba = {};
+let usados = {};
+let canvasList = [];
 
-// Equipos: [{ id, nombre, colegio, alumnos: [nombre1, nombre2, ...] }]
 let equipos = [];
-let logoBase64Cache = null; // Logo precargado desde /api/logo
-// Puntuaciones: [{ id, equipoId, alumnoIdx, prueba, criterios, total, fecha }]
+let logoBase64Cache = null;
 let puntuaciones = [];
-// Valores temporales del formulario de puntuación activo
 let rubricaActual = {};
 
-// URL base de la API — relativa al servidor que sirve la página
 const API_DATOS = '/api/datos';
 
-// Actualiza el indicador visual de estado del servidor (barra superior en la pestaña de Puntuación)
 function mostrarEstadoServidor(texto, esError) {
     const el = $('servidor-estado');
     if (!el) return;
@@ -169,7 +153,6 @@ function mostrarEstadoServidor(texto, esError) {
     el.classList.toggle('error', !!esError);
 }
 
-// Precarga el logo desde el servidor (evita problemas de canvas/CORS en iOS)
 async function precargarLogo() {
     try {
         const resp = await fetch('/api/logo');
@@ -179,7 +162,6 @@ async function precargarLogo() {
     } catch { logoBase64Cache = null; }
 }
 
-// Carga equipos y puntuaciones desde el servidor al arrancar la página.
 async function cargarDatos() {
     try {
         const respuesta = await fetch(API_DATOS);
@@ -216,8 +198,6 @@ async function guardarDatos() {
     }
 }
 
-// Actualiza el estado local con los datos frescos devueltos por el servidor
-// tras cada operación atómica, para que la pestaña no quede desincronizada.
 function aplicarDatosServidor(datos) {
     equipos      = Array.isArray(datos.equipos)      ? datos.equipos      : equipos;
     puntuaciones = Array.isArray(datos.puntuaciones) ? datos.puntuaciones : puntuaciones;
@@ -247,7 +227,6 @@ const infoPrueba          = $('info-prueba');
 const infoTitulo          = $('info-titulo');
 const infoDescripcion     = $('info-descripcion');
 
-// Hazme fan — cronómetro simple
 const hazmeFanSection    = $('hazme-fan-section');
 const cronoDisplay       = $('cronometro-display');
 const cronoIniciar       = $('crono-iniciar');
@@ -256,21 +235,18 @@ const cronoReset         = $('crono-reset');
 const cronoEstado        = $('crono-estado');
 const hazmeFanVolver     = $('hazme-fan-volver');
 
-// Hazme fan — selector de equipos y pop-up de llamada
 const hazmeEquiposGrid    = $('hazme-equipos-grid');
 const hazmeSeleccionarBtn = $('hazme-seleccionar-btn');
 const hazmeEstado         = $('hazme-selector-estado');
-const hazmePopup          = $('hazme-popup');         // Pop-up compartido con el selector de ruletas
+const hazmePopup          = $('hazme-popup');
 const hazmePopupNombre    = $('hazme-popup-nombre');
 const hazmePopupCuenta    = $('hazme-popup-cuenta');
 
-// Selector de equipos para pruebas 2, 3 y 4 (reutiliza las mismas clases CSS y el mismo pop-up)
 const ruletaEquiposSelector = $('ruleta-equipos-selector');
 const ruletaEquiposGrid     = $('ruleta-equipos-grid');
 const ruletaSeleccionarBtn  = $('ruleta-seleccionar-btn');
 const ruletaSelectorEstado  = $('ruleta-selector-estado');
 
-// Fábrica de Historias — cronómetro doble (preparación + discurso)
 const fabricaCrono       = $('fabrica-crono');
 const fabricaDisplay     = $('fabrica-display');
 const fabricaFaseNombre  = $('fabrica-fase-nombre');
@@ -281,7 +257,6 @@ const fabricaReset       = $('fabrica-reset');
 const fabricaEstado      = $('fabrica-estado');
 const avisoRepetida      = $('aviso-repetida');
 
-// Voces con Derecho — cronómetro simple de hasta 2:00
 const vocesCrono         = $('voces-crono');
 const vocesDisplay       = $('voces-display');
 const vocesIniciar       = $('voces-iniciar');
@@ -289,10 +264,9 @@ const vocesPausar        = $('voces-pausar');
 const vocesReset         = $('voces-reset');
 const vocesEstado        = $('voces-estado');
 
-// Duelo de Personajes — panel de elección de personaje y cronómetro doble
-const dueloEleccion      = $('duelo-eleccion');   // panel con los dos botones de personaje
-const dueloBtnA          = $('duelo-btn-a');       // botón personaje A
-const dueloBtnB          = $('duelo-btn-b');       // botón personaje B
+const dueloEleccion      = $('duelo-eleccion');
+const dueloBtnA          = $('duelo-btn-a');
+const dueloBtnB          = $('duelo-btn-b');
 const dueloCrono         = $('duelo-crono');
 const dueloDisplay       = $('duelo-display');
 const dueloFaseNombre    = $('duelo-fase-nombre');
@@ -302,7 +276,6 @@ const dueloPausar        = $('duelo-pausar');
 const dueloReset         = $('duelo-reset');
 const dueloEstado        = $('duelo-estado');
 
-// Final 2 — La Palabra Caliente — cronómetro de intervenciones alternadas
 const palabraCronoPanel        = $('palabra-crono-panel');
 const palabraTurnoDisplayEl    = $('palabra-turno-display');
 const palabraParticipanteLabel = $('palabra-participante-label');
@@ -315,7 +288,6 @@ const palabraCronoEstado       = $('palabra-crono-estado');
 const palitosA                 = $('palitos-a');
 const palitosB                 = $('palitos-b');
 
-// Final 1 — Declamación — cronómetro doble (preparación + declamación)
 const declaCrono         = $('decla-crono');
 const declaDisplay       = $('decla-display');
 const declaFaseNombre    = $('decla-fase-nombre');
@@ -325,7 +297,6 @@ const declaPausar        = $('decla-pausar');
 const declaReset         = $('decla-reset');
 const declaEstado        = $('decla-estado');
 
-// Final 3 — Duelo de Personajes Final — botón de sorteo y panel de cronómetro
 const dueloFinalAsignarDiv     = $('duelo-final-asignar');
 const dueloFinalAsignarBtn     = $('duelo-final-asignar-btn');
 const dueloFinalPanel          = $('duelo-final-panel');
@@ -346,7 +317,6 @@ const replicaNombreB           = $('replica-nombre-b');
 const replicasAEl              = $('replicas-a');
 const replicasBEl              = $('replicas-b');
 
-// Final 4 — El Minuto de Oro — dos cronómetros en estrella dorada
 const minutoOroSection       = $('minuto-oro-section');
 const minutoOroAsignarDiv    = $('minuto-oro-asignar');
 const minutoOroAsignarBtn    = $('minuto-oro-asignar-btn');
@@ -354,21 +324,34 @@ const minutoOroAsignarEstado = $('minuto-oro-asignar-estado');
 const minutoOroCronos        = $('minuto-oro-cronos');
 const estrellaA              = $('estrella-a');
 const estrellaB              = $('estrella-b');
+const estrellaC              = $('estrella-c');
+const estrellaD              = $('estrella-d');
 const minutoADisplay         = $('minuto-a-display');
 const minutoBDisplay         = $('minuto-b-display');
+const minutoCDisplay         = $('minuto-c-display');
+const minutoDDisplay         = $('minuto-d-display');
 const minutoANombre          = $('minuto-a-nombre');
 const minutoBNombre          = $('minuto-b-nombre');
+const minutoCNombre          = $('minuto-c-nombre');
+const minutoDNombre          = $('minuto-d-nombre');
 const minutoAIniciar         = $('minuto-a-iniciar');
 const minutoBIniciar         = $('minuto-b-iniciar');
+const minutoCIniciar         = $('minuto-c-iniciar');
+const minutoDIniciar         = $('minuto-d-iniciar');
 const minutoAPausar          = $('minuto-a-pausar');
 const minutoBPausar          = $('minuto-b-pausar');
+const minutoCPausar          = $('minuto-c-pausar');
+const minutoDPausar          = $('minuto-d-pausar');
 const minutoAReset           = $('minuto-a-reset');
 const minutoBReset           = $('minuto-b-reset');
-const minutoAEstado              = $('minuto-a-estado');
-const minutoBEstado              = $('minuto-b-estado');
+const minutoCReset           = $('minuto-c-reset');
+const minutoDReset           = $('minuto-d-reset');
+const minutoAEstado          = $('minuto-a-estado');
+const minutoBEstado          = $('minuto-b-estado');
+const minutoCEstado          = $('minuto-c-estado');
+const minutoDEstado          = $('minuto-d-estado');
 const minutoOroPuntuacionesBtn   = $('minuto-oro-puntuaciones');
 
-// Fábrica de Historias — Pop-up de resultado
 const fabricaPopup          = $('fabrica-popup');
 const fabricaPopupContexto  = $('fabrica-popup-contexto');
 const fabricaPopupProblema  = $('fabrica-popup-problema');
@@ -476,8 +459,97 @@ function montarSorteos() {
         csvUpload.classList.remove('hidden');
         usarCsvBtn.classList.add('hidden');
     });
+    $('cerrar-prueba-overlay').addEventListener('click', cerrarPruebaOverlay);
+    $('cerrar-crono-overlay').addEventListener('click', () => { ocultarCronoGigante(); cerrarCronoOverlay(); volverSeleccion(); });
+    $('crono-gigante-cerrar').addEventListener('click', ocultarCronoGigante);
+
+    $('sorteo-sala-select').addEventListener('change', e => {
+        salaSorteoActual = e.target.value;
+        actualizarSesionInfo();
+        renderHazmeEquipos();
+        renderRuletaEquipos();
+    });
+    $('sorteo-turno-select').addEventListener('change', e => {
+        rondaSorteoActual = e.target.value;
+        actualizarSesionInfo();
+        renderHazmeEquipos();
+        renderRuletaEquipos();
+    });
+    $('sorteo-ronda-select').addEventListener('change', e => {
+        rondaActual = e.target.value;
+        actualizarSesionInfo();
+        sincronizarRondaEnPuntuacion();
+    });
 }
-// Carga la prueba elegida en el desplegable: muestra info y decide siguiente paso.
+
+function actualizarSesionInfo() {
+    const info = $('sesion-equipos-info');
+    if (!info) return;
+    if (!salaSorteoActual) { info.textContent = ''; return; }
+    const turnoEfectivo = rondaSorteoActual || '1';
+    const equiposFiltrados = equiposDeSalaYRonda(salaSorteoActual, turnoEfectivo);
+    const idx = SALAS_ORDEN.indexOf(salaSorteoActual);
+    const idxOrigen = ((idx - (Number(turnoEfectivo) - 1)) % 3 + 3) % 3;
+    const salaOrigen = SALAS_ORDEN[idxOrigen];
+    const turnoTxt = rondaSorteoActual ? ` · Turno ${rondaSorteoActual}` : '';
+    const rondaTxt = rondaActual ? ` · Ronda ${rondaActual}` : '';
+    info.textContent = `Equipos de ${salaOrigen} en ${salaSorteoActual}${turnoTxt}${rondaTxt} — ${equiposFiltrados.length} equipo${equiposFiltrados.length !== 1 ? 's' : ''}`;
+}
+
+function sincronizarRondaEnPuntuacion() {
+    const sel = $('punt-ronda');
+    if (sel && rondaActual) sel.value = rondaActual;
+}
+
+function abrirCronoOverlay(prepararFn, extrasIds = []) {
+    const body = $('crono-overlay-body');
+    body.appendChild($('crono-contenido'));
+    extrasIds.forEach(id => { const el = $(id); if (el) body.appendChild(el); });
+    resultadoDiv.classList.remove('hidden');
+    $('crono-overlay').classList.remove('hidden');
+    if (prepararFn) prepararFn();
+}
+
+function cerrarCronoOverlay() {
+    const overlay = $('crono-overlay');
+    if (!overlay || overlay.classList.contains('hidden')) return;
+    const asides = document.querySelector('.sorteo-asides');
+    ['historial-panel', 'palabra-crono-panel', 'duelo-final-panel'].forEach(id => {
+        const el = $(id);
+        if (el && el.closest('#crono-overlay') && asides) {
+            el.classList.add('hidden');
+            asides.appendChild(el);
+        }
+    });
+    fabricaCrono.classList.add('hidden');
+    vocesCrono.classList.add('hidden');
+    dueloCrono.classList.add('hidden');
+    declaCrono.classList.add('hidden');
+    resultadoDiv.classList.add('hidden');
+    pararFabricaSilencioso();
+    pararVocesSilencioso();
+    pararDueloSilencioso();
+    pararDeclaSilencioso();
+    pararPalabraCalienteSilencioso();
+    pararDueloFinalSilencioso();
+    const ruletaSection  = $('ruleta-section');
+    const accionesRuleta = ruletaSection.querySelector('.acciones-ruleta');
+    ruletaSection.insertBefore($('crono-contenido'), accionesRuleta);
+    overlay.classList.add('hidden');
+}
+
+function abrirPruebaOverlay(prueba) {
+    const overlayBody = $('prueba-overlay-body');
+    overlayBody.appendChild($('prueba-contenido'));
+    overlayBody.appendChild(document.querySelector('.sorteo-asides'));
+    $('prueba-overlay').classList.remove('hidden');
+    continuarCargaPrueba(prueba);
+}
+
+function cerrarPruebaOverlay() {
+    volverSeleccion();
+}
+
 function cargarPrueba() {
     const prueba = pruebaSelect.value;
     if (!prueba) return;
@@ -485,67 +557,57 @@ function cargarPrueba() {
     const config = configuraciones[prueba];
     ocultarSeccionesSorteo();
 
-    infoTitulo.textContent      = config.titulo;
-    infoDescripcion.textContent = config.descripcion || '';
-    infoPrueba.classList.remove('hidden');
-
-    // Para pruebas de clasificación mostramos el selector de sala/ronda primero.
-    if (FASE_CLASIFICACION.includes(prueba)) {
-        mostrarSelectorSalaRonda(prueba);
-        return;
+    const usaSelector = FASE_CLASIFICACION.includes(prueba) || prueba === 'declamacion';
+    if (usaSelector) {
+        ruletaEquiposSelector.classList.remove('hidden');
+        inicializarRuletaSelector(null);
     }
-    continuarCargaPrueba(prueba);
-}
 
-// Muestra el bloque de selección de sala y ronda.
-function mostrarSelectorSalaRonda(prueba) {
-    const bloque = $('sala-ronda-selector');
-    if (!bloque) return;
-    bloque.classList.remove('hidden');
-    $('sala-ronda-confirmar').onclick = () => {
-        const sala  = $('sorteo-sala-select').value;
-        const ronda = $('sorteo-ronda-select').value;
-        if (!sala || !ronda) { alert('Elige sala y ronda antes de continuar.'); return; }
-        salaSorteoActual  = sala;
-        rondaSorteoActual = ronda;
-        bloque.classList.add('hidden');
-        continuarCargaPrueba(prueba);
+    const btnWrapper = $('btn-acceder-prueba-wrapper');
+    const btnAcceder = $('btn-acceder-prueba');
+    btnAcceder.onclick = () => {
+        abrirIntroPrueba(prueba, config);
     };
+    btnWrapper.classList.remove('hidden');
 }
 
-// Continúa la carga de prueba una vez conocida sala+ronda (o sin ellas en fase final).
+function abrirIntroPrueba(prueba, config) {
+    const partes  = (config.titulo || '').split(' — ');
+    const prefijo = partes.length > 1 ? partes[0] : '';
+    const nombre  = partes.length > 1 ? partes.slice(1).join(' — ') : config.titulo;
+    $('intro-prueba-numero').textContent      = prefijo.toUpperCase();
+    $('intro-prueba-titulo').textContent      = nombre;
+    $('intro-prueba-descripcion').textContent = config.descripcion || '';
+    $('intro-prueba-comenzar').onclick = () => {
+        $('intro-prueba-overlay').classList.add('hidden');
+        abrirPruebaOverlay(prueba);
+    };
+    $('intro-prueba-volver').onclick = () => {
+        $('intro-prueba-overlay').classList.add('hidden');
+    };
+    $('intro-prueba-overlay').classList.remove('hidden');
+}
+
 function continuarCargaPrueba(prueba) {
     const config = configuraciones[prueba];
 
     if (config.tipo === 'cronometro') {
-        // Hazme fan: No tiene sorteo.
         hazmeFanSection.classList.remove('hidden');
         resetCronometro();
         inicializarHazmeSelector();
+        $('hazme-equipos-selector').classList.add('hidden');
     } else if (config.tipo === 'minuto-oro') {
-        // El Minuto de Oro
         minutoOroSection.classList.remove('hidden');
         inicializarMinutoOro();
     } else if (prueba === 'palabra-caliente' || prueba === 'duelo-personajes-final') {
-        // Fase final con emparejamiento: primero sorteo de equipos y oradores
         tituloPrueba.textContent = config.titulo;
         mostrarEmparejamientoFinal(prueba);
     } else {
-        // Pruebas con CSV: mostrar el selector de equipos y luego pedir el CSV.
         tituloPrueba.textContent = config.titulo;
-        // El Duelo Final no usa selector de orden:  se sortean al azar automáticamente después de girar la ruleta.
         if (prueba !== 'duelo-personajes-final') {
             ruletaEquiposSelector.classList.remove('hidden');
 
-            // Para Declamación usa todos los equipos registrados (los 5 finalistas).
-            // Para pruebas de clasificación filtramos por sala y ronda.
-            if (prueba === 'declamacion') {
-                inicializarRuletaSelector(null);
-            } else {
-                const filtrados = equiposDeSalaYRonda(salaSorteoActual, rondaSorteoActual);
-                const ids = filtrados.map(e => e.id);
-                inicializarRuletaSelector(ids.length ? ids : null);
-            }
+            inicializarRuletaSelector(null);
         }
 
         if (DATOS_PRUEBAS[prueba]) {
@@ -556,44 +618,47 @@ function continuarCargaPrueba(prueba) {
     }
 }
 
-// Carga los datos de una prueba en la ruleta, tanto si vienen embebidos como del CSV.
-// desdeEmbebidos=true muestra el botón de escape a CSV personalizado.
 function cargarDatosEnRuleta(prueba, data, desdeEmbebidos = false) {
     datosPrueba[prueba] = data;
     usados[prueba] = usados[prueba] || [];
     csvUpload.classList.add('hidden');
     ruletaSection.classList.remove('hidden');
     usarCsvBtn.classList.toggle('hidden', !desdeEmbebidos);
-    if (prueba === 'palabra-caliente') {
-        historialPanel.classList.remove('hidden');
-        actualizarHistorial(prueba);
-        palabraCronoPanel.classList.remove('hidden');
-        resetPalabraCaliente();
-    } else {
-        historialPanel.classList.add('hidden');
-        palabraCronoPanel.classList.add('hidden');
-    }
+    historialPanel.classList.add('hidden');
+    palabraCronoPanel.classList.add('hidden');
+    if (prueba === 'palabra-caliente') actualizarHistorial(prueba);
     if (prueba === 'duelo-personajes-final') resetDueloFinal();
     inicializarRuleta(prueba);
 }
 
-// Oculta todo lo de la pantalla de sorteos y deja la selección limpia.
 function ocultarSeccionesSorteo() {
+    const overlay = $('prueba-overlay');
+    if (overlay && !overlay.classList.contains('hidden')) {
+        const seccionRuleta  = document.querySelector('.seccion-ruleta');
+        const contPrincipal  = document.querySelector('#modo-sorteos .contenedor-principal');
+        seccionRuleta.appendChild($('prueba-contenido'));
+        contPrincipal.appendChild(document.querySelector('.sorteo-asides'));
+        overlay.classList.add('hidden');
+    }
+    cerrarCronoOverlay();
+    clearTimeout(resultadoTimerId); resultadoTimerId = null; resultadoPopupPrepFn = null;
+    fabricaPopup.classList.add('hidden');
+    $('resultado-popup').classList.add('hidden');
+    $('btn-ir-crono').classList.add('hidden');
     infoPrueba.classList.add('hidden');
+    $('btn-acceder-prueba-wrapper').classList.add('hidden');
     csvUpload.classList.add('hidden');
     ruletaSection.classList.add('hidden');
     usarCsvBtn.classList.add('hidden');
     historialPanel.classList.add('hidden');
     hazmeFanSection.classList.add('hidden');
     minutoOroSection.classList.add('hidden');
-    ruletaEquiposSelector.classList.add('hidden');  // selector de pruebas 2/3/4
-    const salaRondaBloque = $('sala-ronda-selector');
-    if (salaRondaBloque) salaRondaBloque.classList.add('hidden');
+    ruletaEquiposSelector.classList.add('hidden');
     const empPanel = $('final-emparejamiento-panel');
     if (empPanel) empPanel.classList.add('hidden');
     fabricaCrono.classList.add('hidden');
     vocesCrono.classList.add('hidden');
-    dueloEleccion.classList.add('hidden');          // panel de elección de personaje
+    dueloEleccion.classList.add('hidden');
     dueloCrono.classList.add('hidden');
     declaCrono.classList.add('hidden');
     palabraCronoPanel.classList.add('hidden');
@@ -603,19 +668,23 @@ function ocultarSeccionesSorteo() {
     pararFabricaSilencioso();
     pararVocesSilencioso();
     pararDueloSilencioso();
-    pararDueloEleccionSilencioso();                 // para el pop-up de elección
-    pararDeclaSilencioso();                         // para el cronómetro de Declamación
-    pararPalabraCalienteSilencioso();               // para el cronómetro de La Palabra Caliente
-    pararDueloFinalSilencioso();                    // para el cronómetro del Duelo Final
-    pararAsignarDueloFinalSilencioso();             // para el pop-up de sorteo de equipos
-    pararMinutoOroSilencioso();                     // para los dos cronómetros del Minuto de Oro
-    pararRuletaSelectorSilencioso();                // para el temporizador del pop-up
+    pararDueloEleccionSilencioso();
+    pararDeclaSilencioso();
+    pararPalabraCalienteSilencioso();
+    pararDueloFinalSilencioso();
+    pararAsignarDueloFinalSilencioso();
+    pararMinutoOroSilencioso();
+    pararRuletaSelectorSilencioso();
     resultadoDiv.innerHTML = '';
 }
 
 function volverSeleccion() {
     ocultarSeccionesSorteo();
     pruebaSelect.value = '';
+    if (ordenGlobalTurnos.length > 0) {
+        ruletaEquiposSelector.classList.remove('hidden');
+        renderRuletaEquipos();
+    }
 }
 /*  
    7) MODO SORTEOS — Carga del CSV */
@@ -638,7 +707,6 @@ function parsearLineaCsv(line) {
     fields.push(current);
     return fields;
 }
-// Convierte el texto CSV en un array de objetos usando la primera fila como cabeceras.
 function parsearCsv(csv) {
     const lines = csv.split(/\r?\n/).filter(line => line.trim());
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
@@ -662,14 +730,12 @@ function inicializarRuleta(prueba) {
     dueloFinalAsignarDiv.classList.add('hidden');
     avisoRepetida.classList.add('hidden');
     canvasList = [];
-    // Instrucciones de Fábrica de Historias: visibles solo en esa prueba
     const fabricaInstr = $('fabrica-instrucciones');
     if (fabricaInstr) {
         fabricaInstr.classList.toggle('hidden', prueba !== 'fabrica-historias');
     }
 
     if (config.tipo === 'multiple') {
-        // Fábrica de Historias: tres ruletas con etiqueta y resultado bajo cada una.
         const etiquetasUI = { contexto: 'Contexto', problema: 'Problema', personaje: 'Personaje' };
         config.columnas.forEach(col => {
             const opciones = datosPrueba[prueba].map(row => row[col]).filter(v => v);
@@ -679,9 +745,8 @@ function inicializarRuleta(prueba) {
             });
         });
     } else if (config.tipo === 'simple') {
-        // Una sola ruleta grande.
         const opciones = datosPrueba[prueba].map(row => {
-            if (prueba === 'voces-derecho') return `Art. ${row.numero} — ${row.descripcion}`;
+            if (prueba === 'voces-derecho') return row.descripcion;
             return `${row.nombre}: ${row.descripcion}`;
         });
         crearRuleta('ruleta', opciones, { modoSolo: true });
@@ -698,7 +763,6 @@ function inicializarRuleta(prueba) {
 
 
 
-// Crea un bloque de ruleta con etiqueta opcional y un cuadro de resultado opcional.
 function crearRuleta(nombre, opciones, opts = {}) {
     const { etiqueta = null, modoSolo = false, conResultadoBloque = false } = opts;
 
@@ -742,7 +806,7 @@ function dibujarRuleta(canvas, opciones) {
     const radius = Math.min(cx, cy) - 14;
     const ang = (2 * Math.PI) / opciones.length;
     const colors = ['#1a6fc4', '#3a9bd5', '#42A5F5', '#1565C0', '#0288D1', '#29B6F6', '#1976D2', '#0097A7'];
-    const fontSize = Math.max(13, Math.round(canvas.width * 0.038));
+    const fontSize = Math.max(12, Math.round(canvas.width * 0.032));
 
     opciones.forEach((opcion, i) => {
         ctx.fillStyle = colors[i % colors.length];
@@ -752,7 +816,7 @@ function dibujarRuleta(canvas, opciones) {
         ctx.closePath();
         ctx.fill();
 
-        ctx.strokeStyle = 'white';
+        ctx.strokeStyle = 'black';
         ctx.lineWidth = 2;
         ctx.stroke();
 
@@ -760,15 +824,14 @@ function dibujarRuleta(canvas, opciones) {
         ctx.translate(cx, cy);
         ctx.rotate(i * ang + ang / 2);
         ctx.textAlign = 'right';
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = 'black';
         ctx.font = `bold ${fontSize}px Fredoka, "Baloo 2", Arial`;
-        const maxChars = Math.max(8, Math.floor(radius / (fontSize * 0.55)));
+        const maxChars = Math.max(6, Math.floor((radius * 0.85 - 18) / (fontSize * 0.58)));
         const texto = opcion.length > maxChars ? opcion.slice(0, maxChars - 1) + '…' : opcion;
-        ctx.fillText(texto, radius - 22, fontSize / 3);
+        ctx.fillText(texto, radius - 18, fontSize / 3);
         ctx.restore();
     });
 
-    // Flecha indicadora (apunta al sector ganador en la parte superior).
     ctx.fillStyle = '#0d1b2a';
     ctx.beginPath();
     ctx.moveTo(cx, 4);
@@ -777,7 +840,6 @@ function dibujarRuleta(canvas, opciones) {
     ctx.closePath();
     ctx.fill();
 
-    // Círculo central decorativo.
     ctx.fillStyle = 'white';
     ctx.beginPath();
     ctx.arc(cx, cy, radius * 0.10, 0, 2 * Math.PI);
@@ -790,6 +852,11 @@ function dibujarRuleta(canvas, opciones) {
 
 /* 10) RULETAS — Giro */
 function girarRuleta() {
+    cerrarCronoOverlay();
+    clearTimeout(resultadoTimerId); resultadoTimerId = null; resultadoPopupPrepFn = null;
+    fabricaPopup.classList.add('hidden');
+    $('resultado-popup').classList.add('hidden');
+    $('btn-ir-crono').classList.add('hidden');
     const prueba = pruebaSelect.value;
     const config = configuraciones[prueba];
 
@@ -841,7 +908,6 @@ function girarRuleta() {
         }
         girarCanvas(canvasList[0].canvas, opciones);
     } else if (config.tipo === 'dupla') {
-        // Antes de un nuevo giro: limpiar el panel de elección y el cronómetro previos.
         dueloEleccion.classList.add('hidden');
         dueloCrono.classList.add('hidden');
         dueloFinalAsignarDiv.classList.add('hidden');
@@ -854,14 +920,12 @@ function girarRuleta() {
         if (pruebaSelect.value === 'duelo-personajes-final') resetDueloFinal();
         girarCanvas(canvasList[0].canvas, canvasList[0].opciones, 'dupla');
     } else if (config.tipo === 'genero-texto') {
-        // Antes de un nuevo giro: ocultar el cronómetro de la declamación anterior.
         declaCrono.classList.add('hidden');
         pararDeclaSilencioso();
         girarCanvas(canvasList[0].canvas, canvasList[0].opciones, 'genero');
     }
 }
 
-// Anima el giro durante 3 s con desaceleración y calcula el sector ganador.
 function girarCanvas(canvas, opciones, tipoExtra = null, callback = null) {
     const ctx = canvas.getContext('2d');
     let rotation = 0;
@@ -886,7 +950,6 @@ function girarCanvas(canvas, opciones, tipoExtra = null, callback = null) {
         if (progress < 1) {
             requestAnimationFrame(animate);
         } else {
-            // Sector que ha quedado bajo la flecha (arriba del canvas).
             const ang = (2 * Math.PI) / opciones.length;
             const finalAngle = rotation % (2 * Math.PI);
             const idx = Math.floor((2 * Math.PI - finalAngle) / ang) % opciones.length;
@@ -904,7 +967,6 @@ function mostrarResultadoMultiple(resultados) {
     const orden = ['contexto', 'problema', 'personaje'];
     const etiquetas = { contexto: 'Contexto', problema: 'Problema', personaje: 'Personaje' };
 
-    // Pone el resultado destacado debajo de cada ruleta.
     canvasList.forEach(({ resBox, nombre }) => {
         if (!resBox) return;
         const valor = resultados[nombre] || '';
@@ -914,13 +976,11 @@ function mostrarResultadoMultiple(resultados) {
         setTimeout(() => resBox.classList.remove('recien-aterrizado'), 800);
     });
 
-    // Resumen general en el área principal de resultado.
     const lineas = orden.map(n =>
         `<div class="resultado-item"><strong>${etiquetas[n] || n}:</strong> ${resultados[n] || ''}</div>`
     );
     resultadoDiv.innerHTML = `<div class="resultado-multiple">${lineas.join('')}</div>`;
 
-    // Tracking de combinaciones repetidas (sólo en Fábrica de Historias).
     const prueba = pruebaSelect.value;
     if (prueba === 'fabrica-historias') {
         const clave = orden.map(c => resultados[c] || '').join('|');
@@ -929,37 +989,28 @@ function mostrarResultadoMultiple(resultados) {
         avisoRepetida.classList.toggle('hidden', !yaSalio);
         if (!yaSalio) usados[prueba].push(clave);
 
-        // Mostrar el cronómetro de doble fase listo para arrancar.
-        prepararCronometroFabrica();
-        // Pop-up con el resumen de la combinación sorteada.
         mostrarFabricaPopup(resultados);
+        mostrarPopupConTimer(fabricaPopup, () => abrirCronoOverlay(prepararCronometroFabrica));
     }
 }
-// Resultado para los demás tipos de prueba (1 ruleta).
 function mostrarResultado(resultado, tipoExtra) {
     const prueba = pruebaSelect.value;
     const config = configuraciones[prueba];
 
     if (config.tipo === 'dupla') {
-        // Tracking de duplas: si la dupla ya había salido, mostramos aviso (no bloqueante).
         usados[prueba] = usados[prueba] || [];
         const yaSalio = usados[prueba].includes(resultado);
         avisoRepetida.classList.toggle('hidden', !yaSalio);
         if (!yaSalio) usados[prueba].push(resultado);
 
-        // Muestra la dupla en grande y abre el panel de asignación con alumnos reales.
-        // El segundo giro (asignación aleatoria) se dispara desde "Asignar personajes".
         resultadoDiv.innerHTML =
             `<div class="resultado-dupla"><strong>Dupla sorteada:</strong> ${escapar(resultado)}</div>`;
-        // El Duelo Final asigna los equipos de forma aleatoria mediante un botón;
-        // el Duelo de Clasificación deja al participante elegir su personaje.
         if (prueba === 'duelo-personajes-final') {
             mostrarAsignacionFinalDuelo(resultado);
         } else {
             mostrarEleccionDuelo(resultado);
         }
     } else if (config.tipo === 'genero-texto') {
-        // Declamación: tras sortear género, escogemos un fragmento disponible.
         const disponibles = datosPrueba[prueba].filter(r => r.genero === resultado && !usados[prueba].includes(r.titulo));
         if (disponibles.length > 0) {
             const sel = disponibles[Math.floor(Math.random() * disponibles.length)];
@@ -971,13 +1022,18 @@ function mostrarResultado(resultado, tipoExtra) {
                     ${sel.autor ? `<strong>Autor/a:</strong> ${escapar(sel.autor)}` : ''}
                 </div>`;
             usados[prueba].push(sel.titulo);
-            // Mostrar el cronómetro doble listo para arrancar.
-            prepararCronometroDecla();
+            $('resultado-popup-body').innerHTML =
+                `<div class="resultado-genero">
+                    <strong>Género:</strong> ${escapar(sel.genero)}<br>
+                    <strong>Obra:</strong> ${escapar(sel.obra)}<br>
+                    <strong>Título:</strong> ${escapar(sel.titulo)}<br>
+                    ${sel.autor ? `<strong>Autor/a:</strong> ${escapar(sel.autor)}` : ''}
+                </div>`;
+            mostrarPopupConTimer($('resultado-popup'), () => abrirCronoOverlay(prepararCronometroDecla));
         } else {
             resultadoDiv.textContent = 'No hay fragmentos disponibles para este género.';
         }
     } else if (prueba === 'voces-derecho') {
-        // Voces con Derecho: número de artículo.
         const m = resultado.match(/Art\.\s+(\d+)\s+—\s+(.*)/);
         const numero = m ? m[1] : '';
         const descripcion = m ? m[2] : resultado;
@@ -989,21 +1045,32 @@ function mostrarResultado(resultado, tipoExtra) {
             </div>`;
         if (!usados[prueba].includes(resultado)) usados[prueba].push(resultado);
         actualizarHistorial(prueba);
-        // Mostrar el cronómetro de 2:00 listo para arrancar cuando empiece el alumno.
-        prepararCronometroVoces();
+        $('resultado-popup-body').innerHTML =
+            `<div class="resultado-articulo">
+                <div class="articulo-etiqueta">Artículo de la Constitución</div>
+                <div class="articulo-numero">Art. ${escapar(numero)}</div>
+                <div class="articulo-descripcion">${escapar(descripcion)}</div>
+            </div>`;
+        mostrarPopupConTimer($('resultado-popup'), () => abrirCronoOverlay(prepararCronometroVoces));
     } else if (prueba === 'palabra-caliente') {
         const sit = datosPrueba[prueba].find(r => `${r.nombre}: ${r.descripcion}` === resultado);
         resultadoDiv.innerHTML =
             `<div class="resultado-palabra"><strong>Situación:</strong> ${sit.nombre}<br><br><strong>Descripción:</strong><br>${sit.descripcion}</div>`;
         if (!usados[prueba].includes(resultado)) usados[prueba].push(resultado);
         actualizarHistorial(prueba);
+        $('resultado-popup-body').innerHTML =
+            `<div class="resultado-palabra"><strong>${escapar(sit.nombre)}</strong><br><br>${escapar(sit.descripcion)}</div>`;
+        resetPalabraCaliente();
+        mostrarPopupConTimer($('resultado-popup'), () => abrirCronoOverlay(
+            () => { palabraCronoPanel.classList.remove('hidden'); historialPanel.classList.remove('hidden'); },
+            ['historial-panel', 'palabra-crono-panel']
+        ));
     } else {
         resultadoDiv.innerHTML = `<div class="resultado-simple">${resultado}</div>`;
         usados[prueba] = usados[prueba] || [];
         usados[prueba].push(resultado);
     }
 }
-// Crea el panel lateral con los sorteos previos.
 function actualizarHistorial(prueba) {
     const historial = usados[prueba] || [];
     if (historial.length === 0) {
@@ -1033,7 +1100,7 @@ function limpiarHistorial() {
 
 /*12) HAZME FAN — Cronómetro simple- */
 const CRONO_TOTAL_MS = 2 * 60 * 1000;
-const CRONO_MIN_MS   = 30 * 1000; // queda 0:30 → ya cumplió 1:30
+const CRONO_MIN_MS   = 30 * 1000;
 let cronoIntervalo          = null;
 let cronoFin                = 0;
 let cronoRestanteMs         = CRONO_TOTAL_MS;
@@ -1065,6 +1132,7 @@ function pintarCrono(ms) {
 
 function iniciarCronometro() {
     if (cronoEnMarcha) return;
+    mostrarCronoGigante('cronometro-display', 'Hazme Fan', 'hazme-botones');
     cronoEnMarcha = true;
     cronoFin = Date.now() + cronoRestanteMs;
     cronoIniciar.disabled = true;
@@ -1112,14 +1180,6 @@ function pararCronometroSilencioso() {
     cronoEnMarcha = false;
 }
 
-function terminarCronometro() {
-    pararCronometroSilencioso();
-    cronoIniciar.disabled = false;
-    cronoPausar.disabled  = true;
-    bip(660);
-}
-
-// Pequeño bip con WebAudio (sin ficheros externos).
 function bip(freq = 660) {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1138,32 +1198,26 @@ function bip(freq = 660) {
 
 // /*    12b) HAZME FAN — Selector de equipos 
 let hazmeEquiposSeleccionados = [];
-// Referencia al temporizador del pop-up (necesario para poder pararlo si el
-// profesor cancela la prueba antes de que termine la cuenta atrás).
 let hazmeCuentaInterval = null;
 
-// = Montaje  
 function montarHazmeSelector() {
     hazmeSeleccionarBtn.addEventListener('click', seleccionarEquipoHazme);
 }
-// = Inicialización 
+
 function inicializarHazmeSelector() {
-    hazmeEquiposSeleccionados = [];          // Empezamos sin nadie seleccionado
-    clearInterval(hazmeCuentaInterval);      // Cancelamos cualquier cuenta atrás pendiente
+    hazmeEquiposSeleccionados = [];
+    clearInterval(hazmeCuentaInterval);
     hazmeCuentaInterval = null;
     if (hazmePopup) hazmePopup.classList.add('hidden');
     renderHazmeEquipos();
 }
 
-// = Dibujo de chips 
 function renderHazmeEquipos() {
     if (!hazmeEquiposGrid) return;
 
-    // Equipos de la sala y ronda activas
     const equiposSala = equiposDeSalaYRonda(salaSorteoActual, rondaSorteoActual);
     const restantes = equiposSala.filter(e => !hazmeEquiposSeleccionados.includes(e.id));
 
-    // Si hay menos de 3 equipos, mostramos aviso y desactivamos el botón
     if (equiposSala.length < 3) {
         hazmeEquiposGrid.innerHTML = '';
         hazmeSeleccionarBtn.disabled = true;
@@ -1171,14 +1225,11 @@ function renderHazmeEquipos() {
         return;
     }
 
-    // Construimos un chip HTML por cada equipo de la sala.
-    // La clase 'seleccionado' pone el chip en gris si ya fue llamado.
     hazmeEquiposGrid.innerHTML = equiposSala.map(e => {
         const cls = hazmeEquiposSeleccionados.includes(e.id) ? 'seleccionado' : '';
         return `<div class="hazme-equipo-chip ${cls}" data-id="${e.id}">${escapar(e.nombre)}</div>`;
     }).join('');
 
-    // Mensaje y botón según si quedan equipos o no
     if (restantes.length === 0) {
         hazmeSeleccionarBtn.disabled = true;
         hazmeEstado.textContent = 'Han sido seleccionados todos los equipos.';
@@ -1190,41 +1241,19 @@ function renderHazmeEquipos() {
     }
 }
 
-// = Selección aleatoria:
-// Se ejecuta al pulsar el botón. Elige un equipo al azar entre los
-// que quedan, lo ilumina y abre el pop-up con cuenta atrás.
 function seleccionarEquipoHazme() {
-    // Solo actuamos si quedan equipos por llamar
     const equiposSala = equiposDeSalaYRonda(salaSorteoActual, rondaSorteoActual);
     const restantes = equiposSala.filter(e => !hazmeEquiposSeleccionados.includes(e.id));
     if (restantes.length === 0) return;
 
-    // Si es el primer sorteo de esta prueba, respetar la rotación de primeros
-    let candidatos;
-    if (hazmeEquiposSeleccionados.length === 0 && salaSorteoActual && rondaSorteoActual) {
-        const pendientes = equiposPendientesDePrimero(salaSorteoActual, rondaSorteoActual);
-        candidatos = equiposSala.filter(e => pendientes.includes(e.id));
-        if (candidatos.length === 0) candidatos = restantes;
-    } else {
-        candidatos = restantes;
-    }
+    const eq = restantes[0];
 
-    const eq = candidatos[Math.floor(Math.random() * candidatos.length)];
-
-    // Registrar si es el primero
-    if (hazmeEquiposSeleccionados.length === 0 && salaSorteoActual && rondaSorteoActual) {
-        registrarPrimero(salaSorteoActual, rondaSorteoActual, eq.id);
-    }
-
-    // Quitamos el brillo de cualquier chip anterior y se lo ponemos al elegido
     hazmeEquiposGrid.querySelectorAll('.hazme-equipo-chip').forEach(c => c.classList.remove('iluminado'));
     const chip = hazmeEquiposGrid.querySelector(`.hazme-equipo-chip[data-id="${eq.id}"]`);
     if (chip) chip.classList.add('iluminado');
 
-    // Desactivamos el botón para que no se pueda pulsar mientras el pop-up está abierto
     hazmeSeleccionarBtn.disabled = true;
 
-    // Rellenamos el pop-up con el nombre del equipo y lo mostramos
     hazmePopupNombre.textContent = eq.nombre;
     hazmePopupCuenta.textContent = '5';
     hazmePopup.classList.remove('hidden');
@@ -1249,37 +1278,26 @@ function seleccionarEquipoHazme() {
 }
 
 
-/*  12c) SELECTOR DE EQUIPOS PARA RULETAS (Pruebas 2, 3, 4 y Finales) */
+/*  12) SELECTOR DE EQUIPOS PARA RULETAS (Pruebas 2, 3, 4 y Finales) */
 
-// IDs de equipos ya llamados en la prueba de ruleta activa.
-// Se resetea cada vez que el profesor carga una nueva prueba.
 let ruletaEquiposSeleccionados = [];
 
-// Timer del pop-up para este selector (independiente del de Hazme fan).
-let ruletaCuentaInterval = null;
+let ordenGlobalTurnos  = [];
+let ordenGlobalOffset  = 0;
+let pruebaConOrden     = null;
 
-// Lista de IDs permitidos en esta prueba:
+let ruletaCuentaInterval = null;
 let ruletaEquiposPermitidos = null;
 
-// = Calcula los dos finalistas 
-// Suma los puntos de la fase de clasificación por equipo,
-// los ordena de mayor a menor y devuelve los IDs de los dos primeros.
-// Se usa al cargar Declamación o La Palabra Caliente.
 function obtenerTop2Clasificacion() {
     return equipos
-        // Para cada equipo calculamos sus puntos solo en la fase de clasificación
         .map(eq => ({ id: eq.id, nombre: eq.nombre, pts: totalEquipo(eq.id, 'clasificacion') }))
-        // Descartamos equipos que no tienen ninguna puntuación todavía
         .filter(eq => eq.pts > 0)
-        // sort() con b.pts - a.pts ordena de mayor a menor (descendente)
         .sort((a, b) => b.pts - a.pts)
-        // slice(0,2) se queda solo con los dos primeros del array ordenado
         .slice(0, 2)
-        // Devolvemos únicamente los IDs (nos basta para filtrar más adelante)
         .map(eq => eq.id);
 }
 
-// Devuelve los 4 equipos con más puntos en la fase de clasificación (para la fase final).
 function obtenerTop4Clasificacion() {
     return equipos
         .map(eq => ({ id: eq.id, nombre: eq.nombre, pts: totalEquipo(eq.id, 'clasificacion') }))
@@ -1288,12 +1306,9 @@ function obtenerTop4Clasificacion() {
         .slice(0, 4);
 }
 
-// Devuelve todos los equipos registrados como objetos {id, nombre}
 function obtenerEquiposFinales() {
     return equipos.map(eq => ({ id: eq.id, nombre: eq.nombre }));
 }
-
-// Estado del emparejamiento de fase final
 let finalEquipo1 = null;
 let finalEquipo2 = null;
 let finalEquipo3 = null;
@@ -1301,10 +1316,8 @@ let finalEquipo4 = null;
 
 function oradorAleatorio() { return Math.random() < 0.5 ? 'Orador A' : 'Orador B'; }
 
-// Estado extra para la mesa de 3 equipos (Palabra Caliente)
 let finalEquipo5 = null;
 
-// Muestra el panel de emparejamiento de fase final y conecta sus botones.
 function mostrarEmparejamientoFinal(prueba) {
     const panel      = $('final-emparejamiento-panel');
     const resultado  = $('final-emparejamiento-resultado');
@@ -1319,56 +1332,36 @@ function mostrarEmparejamientoFinal(prueba) {
     acciones.classList.add('hidden');
     panel.classList.remove('hidden');
 
-    // Palabra Caliente: duelo (2) + mesa (3) con todos los finalistas
-    // Duelo Final: 2 duelos con los top 4 clasificados
     const esPalabraCaliente = prueba === 'palabra-caliente';
-    mesaBloque.style.display = esPalabraCaliente ? '' : 'none';
-    enf2Bloque.style.display = esPalabraCaliente ? 'none' : '';
+
+    // Palabra Caliente: 2 parejas con top 4 clasificados
+    // Duelo Final:      2 duelos con top 4 clasificados
+    mesaBloque.style.display  = 'none';
+    enf2Bloque.style.display  = '';
     const enf3Bloque = $('final-enf3-bloque');
     if (enf3Bloque) enf3Bloque.style.display = 'none';
 
+    $('final-enf1-titulo').textContent = esPalabraCaliente ? 'Pareja 1' : 'Duelo 1';
+    $('final-enf2-titulo').textContent = esPalabraCaliente ? 'Pareja 2' : 'Duelo 2';
+
     function sortear() {
-        if (esPalabraCaliente) {
-            const todos = obtenerEquiposFinales();
-            if (todos.length < 5) {
-                alert('Necesitas 5 equipos registrados para sortear.');
-                return;
-            }
-            const m = [...todos].sort(() => Math.random() - 0.5);
-            // Duelo: m[0] vs m[1] | Mesa: m[2] → m[3] → m[4]
-            finalEquipo1 = m[0]; finalEquipo2 = m[1];
-            finalEquipo3 = m[2]; finalEquipo4 = m[3]; finalEquipo5 = m[4];
-
-            $('f1-eq1-nombre').textContent = finalEquipo1.nombre;
-            $('f1-eq1-orador').textContent = '(' + oradorAleatorio() + ')';
-            $('f1-eq2-nombre').textContent = finalEquipo2.nombre;
-            $('f1-eq2-orador').textContent = '(' + oradorAleatorio() + ')';
-            $('f2-eq1-nombre').textContent = finalEquipo3.nombre;
-            $('f2-eq1-orador').textContent = '(' + oradorAleatorio() + ')';
-            $('f2-eq2-nombre').textContent = finalEquipo4.nombre;
-            $('f2-eq2-orador').textContent = '(' + oradorAleatorio() + ')';
-            $('f2-eq3-nombre').textContent = finalEquipo5.nombre;
-            $('f2-eq3-orador').textContent = '(' + oradorAleatorio() + ')';
-        } else {
-            // Duelo Final: top 4 clasificados → 2 duelos (1.º vs 2.º y 3.º vs 4.º)
-            const clasificados = obtenerTop4Clasificacion();
-            if (clasificados.length < 4) {
-                alert('Necesitas al menos 4 equipos con puntuación en la fase de clasificación para sortear el Duelo Final.');
-                return;
-            }
-            const m = [...clasificados].sort(() => Math.random() - 0.5);
-            finalEquipo1 = m[0]; finalEquipo2 = m[1];
-            finalEquipo3 = m[2]; finalEquipo4 = m[3];
-
-            $('f1-eq1-nombre').textContent = finalEquipo1.nombre;
-            $('f1-eq1-orador').textContent = '(' + oradorAleatorio() + ')';
-            $('f1-eq2-nombre').textContent = finalEquipo2.nombre;
-            $('f1-eq2-orador').textContent = '(' + oradorAleatorio() + ')';
-            $('f3-eq1-nombre').textContent = finalEquipo3.nombre;
-            $('f3-eq1-orador').textContent = '(' + oradorAleatorio() + ')';
-            $('f3-eq2-nombre').textContent = finalEquipo4.nombre;
-            $('f3-eq2-orador').textContent = '(' + oradorAleatorio() + ')';
+        const clasificados = obtenerTop4Clasificacion();
+        if (clasificados.length < 4) {
+            alert('Necesitas al menos 4 equipos con puntuación en la fase de clasificación para sortear.');
+            return;
         }
+        const m = [...clasificados].sort(() => Math.random() - 0.5);
+        finalEquipo1 = m[0]; finalEquipo2 = m[1];
+        finalEquipo3 = m[2]; finalEquipo4 = m[3];
+
+        $('f1-eq1-nombre').textContent = finalEquipo1.nombre;
+        $('f1-eq1-orador').textContent = '(' + oradorAleatorio() + ')';
+        $('f1-eq2-nombre').textContent = finalEquipo2.nombre;
+        $('f1-eq2-orador').textContent = '(' + oradorAleatorio() + ')';
+        $('f3-eq1-nombre').textContent = finalEquipo3.nombre;
+        $('f3-eq1-orador').textContent = '(' + oradorAleatorio() + ')';
+        $('f3-eq2-nombre').textContent = finalEquipo4.nombre;
+        $('f3-eq2-orador').textContent = '(' + oradorAleatorio() + ')';
 
         resultado.classList.remove('hidden');
         acciones.classList.remove('hidden');
@@ -1385,7 +1378,6 @@ function mostrarEmparejamientoFinal(prueba) {
     };
 }
 
-// Continúa con el flujo normal de la prueba tras el emparejamiento y sorteo de oradores.
 function continuarPruebaFinal(prueba) {
     if (prueba === 'palabra-caliente') {
         ruletaEquiposSelector.classList.remove('hidden');
@@ -1404,17 +1396,15 @@ function continuarPruebaFinal(prueba) {
     }
 }
 
-// = Variables del popup de Palabra Caliente  
 let palabraPcEqActual   = null;
 let palabraPcChipActual = null;
 
 const palabraPcPopup      = $('palabrapc-popup');
-const palabraPcNombre     = $('palabrapc-nombre'); //el div donde aparece el nombre del equipo
-const palabraPcAlumno     = $('palabrapc-alumno');//el div donde aparece el nombre del alumno
+const palabraPcNombre     = $('palabrapc-nombre');
+const palabraPcAlumno     = $('palabrapc-alumno');
 const palabraPcSortearBtn = $('palabrapc-sortear-btn');
 const palabraPcCerrarBtn  = $('palabrapc-cerrar-btn');
 
-// = Montaje =
 function montarRuletaSelector() {
     ruletaSeleccionarBtn.addEventListener('click', seleccionarEquipoRuleta);
 
@@ -1441,7 +1431,6 @@ function montarRuletaSelector() {
     });
 }
 
-// = Para el timer silenciosamente.
 function pararRuletaSelectorSilencioso() {
     clearInterval(ruletaCuentaInterval);
     ruletaCuentaInterval = null;
@@ -1451,20 +1440,12 @@ function pararRuletaSelectorSilencioso() {
     palabraPcChipActual = null;
 }
 
-// = Inicialización  
-// Se llama al cargar cualquier prueba con CSV.
-// Si se pasa equiposPermitidos (array de IDs), solo aparecen esos equipos.
-// Si no se pasa nada (undefined/null), aparecen todos.
-// Registro de qué equipos ya han salido primero en cada sala+ronda.
-// Clave: "sala|ronda" → array de ids que ya fueron primeros en alguna prueba.
-// Cuando todos los equipos de esa sala+ronda han salido primero una vez, se resetea.
 const primerosEnSala = {};
 
 function registrarPrimero(sala, ronda, equipoId) {
     const clave = `${sala}|${ronda}`;
     if (!primerosEnSala[clave]) primerosEnSala[clave] = [];
     const equiposDeSala = equiposDeSalaYRonda(sala, ronda).map(e => e.id);
-    // Si ya han salido todos, reiniciamos el ciclo
     const yaUsados = primerosEnSala[clave];
     const pendientes = equiposDeSala.filter(id => !yaUsados.includes(id));
     if (pendientes.length === 0) {
@@ -1479,35 +1460,51 @@ function equiposPendientesDePrimero(sala, ronda) {
     const equiposDeSala = equiposDeSalaYRonda(sala, ronda).map(e => e.id);
     const yaUsados = primerosEnSala[clave] || [];
     const pendientes = equiposDeSala.filter(id => !yaUsados.includes(id));
-    // Si quedan pendientes, solo ellos pueden ser primeros; si no, todos pueden (ciclo reiniciado)
     return pendientes.length > 0 ? pendientes : equiposDeSala;
 }
 
 function inicializarRuletaSelector(equiposPermitidos = null) {
-    ruletaEquiposSeleccionados = [];          // Empezamos sin nadie seleccionado
-    ruletaEquiposPermitidos    = equiposPermitidos; // null = todos; array = solo finalistas
-    clearInterval(ruletaCuentaInterval);      // Cancelamos cualquier cuenta pendiente
+    ruletaEquiposSeleccionados = [];
+    ruletaEquiposPermitidos    = equiposPermitidos;
+    clearInterval(ruletaCuentaInterval);
     ruletaCuentaInterval = null;
     if (hazmePopup) hazmePopup.classList.add('hidden');
+
+    const prueba = pruebaSelect ? pruebaSelect.value : '';
+
+    if (ordenGlobalTurnos.length > 0 && !equiposPermitidos) {
+        if (prueba !== pruebaConOrden) {
+            if (pruebaConOrden !== null) ordenGlobalOffset++;
+            pruebaConOrden = prueba;
+        }
+        const n = ordenGlobalTurnos.length;
+        const off = ordenGlobalOffset % n;
+        ruletaOrdenTurnos = [
+            ...ordenGlobalTurnos.slice(off),
+            ...ordenGlobalTurnos.slice(0, off)
+        ];
+        ruletaEquiposSeleccionados = [...ruletaOrdenTurnos];
+    } else {
+        ruletaOrdenTurnos = [];
+    }
+
     renderRuletaEquipos();
 }
 
-// = Dibujo de chips  
-// Crea un chip por equipo (o solo por los finalistas en fase final).
-// Los ya llamados aparecen en gris. Actualiza botón y texto de estado.
+let ruletaOrdenTurnos = [];
+
 function renderRuletaEquipos() {
     if (!ruletaEquiposGrid) return;
 
-    // Si ruletaEquiposPermitidos tiene valor, filtramos; si no, usamos todos
-    // Esto es el operador ternario: condición ? valorSiTrue : valorSiFalse
+    const prueba = pruebaSelect ? pruebaSelect.value : '';
+    const usarFiltroSala = FASE_CLASIFICACION.includes(prueba) && !!salaSorteoActual;
+
     const equiposActivos = ruletaEquiposPermitidos
         ? equipos.filter(e => ruletaEquiposPermitidos.includes(e.id))
-        : equipos;
+        : usarFiltroSala
+            ? equiposDeSalaYRonda(salaSorteoActual, rondaSorteoActual)
+            : equipos;
 
-    // Equipos que todavía no han sido llamados en esta prueba
-    const restantes = equiposActivos.filter(e => !ruletaEquiposSeleccionados.includes(e.id));
-
-    // = Caso: fase final sin finalistas clasificados aún = //
     if (ruletaEquiposPermitidos !== null && equiposActivos.length === 0) {
         ruletaEquiposGrid.innerHTML = '';
         ruletaSeleccionarBtn.disabled = true;
@@ -1516,118 +1513,261 @@ function renderRuletaEquipos() {
         return;
     }
 
-    // = Caso: fase normal sin suficientes equipos (mínimo 3) = //
-    if (ruletaEquiposPermitidos === null && equiposActivos.length < 3) {
+    if (ruletaEquiposPermitidos === null && equiposActivos.length < 2) {
         ruletaEquiposGrid.innerHTML = '';
         ruletaSeleccionarBtn.disabled = true;
-        ruletaSelectorEstado.textContent = 'Debe añadir 3 o más equipos para usar el selector.';
+        ruletaSelectorEstado.textContent = 'Debe añadir 2 o más equipos para usar el selector.';
         return;
     }
 
-    // = Pintamos los chips = //
-    // Solo aparecen los equipos activos (todos o los dos finalistas)
+    const ordenYaAsignado = ruletaOrdenTurnos.length > 0;
+
     ruletaEquiposGrid.innerHTML = equiposActivos.map(e => {
-        const cls = ruletaEquiposSeleccionados.includes(e.id) ? 'seleccionado' : '';
-        return `<div class="hazme-equipo-chip ${cls}" data-id="${e.id}">${escapar(e.nombre)}</div>`;
+        const turno = ruletaOrdenTurnos.indexOf(e.id);
+        const numTurno = turno + 1;
+        const esPrimero = turno === 0;
+        const clsChip = esPrimero ? 'turno-primero' : '';
+        if (ordenYaAsignado) {
+            return `<div class="hazme-equipo-chip-wrap">
+                <span class="hazme-equipo-turno">${numTurno}º</span>
+                <div class="hazme-equipo-chip ${clsChip}" data-id="${e.id}">${escapar(e.nombre)}</div>
+            </div>`;
+        }
+        return `<div class="hazme-equipo-chip" data-id="${e.id}">${escapar(e.nombre)}</div>`;
     }).join('');
 
-    // = Actualizamos botón y texto de estado = //
-    if (restantes.length === 0) {
+    if (ordenYaAsignado) {
         ruletaSeleccionarBtn.disabled = true;
-        ruletaSelectorEstado.textContent = 'Han sido seleccionados todos los equipos.';
+        ruletaSeleccionarBtn.textContent = 'Orden fijado';
+        const primero = equipos.find(e => e.id === ruletaOrdenTurnos[0]);
+        const vuelta  = ordenGlobalOffset > 0 ? ` (rotación ${ordenGlobalOffset})` : '';
+        ruletaSelectorEstado.textContent = `Empieza: ${primero ? escapar(primero.nombre) : '—'}${vuelta}`;
     } else {
         ruletaSeleccionarBtn.disabled = false;
-        // En fase final: mensaje especial indicando quiénes son los finalistas
-        if (ruletaEquiposPermitidos !== null && ruletaEquiposSeleccionados.length === 0) {
+        ruletaSeleccionarBtn.textContent = 'Seleccionar equipo';
+        if (ruletaEquiposPermitidos !== null) {
             const nombres = equiposActivos.map(e => escapar(e.nombre)).join(' y ');
             ruletaSelectorEstado.textContent = `Finalistas: ${nombres}. Selecciona el orden de participación.`;
         } else {
-            ruletaSelectorEstado.textContent = restantes.length === equiposActivos.length
-                ? `${equiposActivos.length} equipo${equiposActivos.length !== 1 ? 's' : ''} disponible${equiposActivos.length !== 1 ? 's' : ''}.`
-                : `Quedan ${restantes.length} equipo${restantes.length !== 1 ? 's' : ''} por seleccionar.`;
+            ruletaSelectorEstado.textContent =
+                `${equiposActivos.length} equipo${equiposActivos.length !== 1 ? 's' : ''} disponible${equiposActivos.length !== 1 ? 's' : ''}. Pulsa para sortear el orden.`;
         }
     }
 }
 
-// = Selección aleatoria = //
-// Mismo flujo que seleccionarEquipoHazme():
 function seleccionarEquipoRuleta() {
     const prueba = pruebaSelect.value;
-    // Trabajamos solo con los equipos permitidos en esta prueba
-    const equiposActivos = ruletaEquiposPermitidos
+    const esFinal = !!ruletaEquiposPermitidos;
+
+    const equiposActivos = esFinal
         ? equipos.filter(e => ruletaEquiposPermitidos.includes(e.id))
-        : equipos;
+        : equiposDeSalaYRonda(salaSorteoActual, rondaSorteoActual);
 
-    // Si es el primer sorteo de esta prueba y es fase de clasificación,
-    // limitamos los candidatos a los que aún no han salido primero en esta sala+ronda.
-    let candidatos;
-    if (ruletaEquiposSeleccionados.length === 0 && FASE_CLASIFICACION.includes(prueba) && salaSorteoActual && rondaSorteoActual) {
-        const pendientes = equiposPendientesDePrimero(salaSorteoActual, rondaSorteoActual);
-        candidatos = equiposActivos.filter(e => pendientes.includes(e.id));
-        if (candidatos.length === 0) candidatos = equiposActivos; // fallback
-    } else {
-        candidatos = equiposActivos.filter(e => !ruletaEquiposSeleccionados.includes(e.id));
-    }
+    if (equiposActivos.length === 0) return;
 
-    const restantes = equiposActivos.filter(e => !ruletaEquiposSeleccionados.includes(e.id));
-    if (restantes.length === 0) return;
-
-    // Selección aleatoria entre los candidatos
-    const eq = candidatos[Math.floor(Math.random() * candidatos.length)];
-
-    // Si es el primer equipo sorteado en clasificación, registrarlo
-    if (ruletaEquiposSeleccionados.length === 0 && FASE_CLASIFICACION.includes(prueba) && salaSorteoActual && rondaSorteoActual) {
-        registrarPrimero(salaSorteoActual, rondaSorteoActual, eq.id);
-    }
-
-    // Quitamos brillo previo y lo ponemos en el chip elegido
-    ruletaEquiposGrid.querySelectorAll('.hazme-equipo-chip').forEach(c => c.classList.remove('iluminado'));
-    const chip = ruletaEquiposGrid.querySelector(`.hazme-equipo-chip[data-id="${eq.id}"]`);
-    if (chip) chip.classList.add('iluminado');
-
-    // Bloqueamos el botón durante el pop-up
-    ruletaSeleccionarBtn.disabled = true;
-
-    // La Palabra Caliente: popup propio sin cuenta atrás, con sorteo de alumno
     if (prueba === 'palabra-caliente') {
-        palabraPcEqActual       = eq;
-        palabraPcChipActual     = chip;
+        const restantes = equiposActivos.filter(e => !ruletaEquiposSeleccionados.includes(e.id));
+        if (restantes.length === 0) return;
+        const eq   = restantes[Math.floor(Math.random() * restantes.length)];
+        const chip = ruletaEquiposGrid.querySelector(`.hazme-equipo-chip[data-id="${eq.id}"]`);
+        palabraPcEqActual            = eq;
+        palabraPcChipActual          = chip;
         palabraPcNombre.textContent  = eq.nombre;
         palabraPcAlumno.textContent  = '';
         palabraPcPopup.classList.remove('hidden');
+        ruletaSeleccionarBtn.disabled = true;
         return;
     }
 
-    // Resto de pruebas: pop-up compartido con cuenta atrás de 5 s
-    hazmePopupNombre.textContent = eq.nombre;
-    hazmePopupCuenta.textContent = '5';
-    hazmePopup.classList.remove('hidden');
+    // Para fase final con solo 2 equipos se mantiene el flujo original
+    if (esFinal) {
+        const restantes = equiposActivos.filter(e => !ruletaEquiposSeleccionados.includes(e.id));
+        if (restantes.length === 0) return;
+        const eq   = restantes[Math.floor(Math.random() * restantes.length)];
+        const chip = ruletaEquiposGrid.querySelector(`.hazme-equipo-chip[data-id="${eq.id}"]`);
+        if (chip) { chip.classList.remove('iluminado'); chip.classList.add('iluminado'); }
+        ruletaSeleccionarBtn.disabled = true;
+        hazmePopupNombre.textContent = eq.nombre;
+        hazmePopupCuenta.textContent = '5';
+        hazmePopup.classList.remove('hidden');
+        let cuenta = 5;
+        clearInterval(ruletaCuentaInterval);
+        ruletaCuentaInterval = setInterval(() => {
+            cuenta--;
+            hazmePopupCuenta.textContent = cuenta;
+            if (cuenta <= 0) {
+                clearInterval(ruletaCuentaInterval);
+                ruletaCuentaInterval = null;
+                hazmePopup.classList.add('hidden');
+                if (chip) { chip.classList.remove('iluminado'); chip.classList.add('seleccionado'); }
+                ruletaEquiposSeleccionados.push(eq.id);
+                renderRuletaEquipos();
+            }
+        }, 1000);
+        return;
+    }
 
-    let cuenta = 5;
-    clearInterval(ruletaCuentaInterval);
-    ruletaCuentaInterval = setInterval(() => {
+    const inicio = Math.floor(Math.random() * equiposActivos.length);
+    const ordenCalculado = [
+        ...equiposActivos.slice(inicio),
+        ...equiposActivos.slice(0, inicio)
+    ].map(e => e.id);
+    const primerEquipo = equiposActivos[inicio];
+    mostrarPopupSorteoOrden(primerEquipo.nombre, () => {
+        ruletaOrdenTurnos          = ordenCalculado;
+        ordenGlobalTurnos          = [...ordenCalculado];
+        ordenGlobalOffset          = 0;
+        pruebaConOrden             = pruebaSelect ? pruebaSelect.value : null;
+        ruletaEquiposSeleccionados = [...ordenCalculado];
+        renderRuletaEquipos();
+    });
+}
+
+let _sorteoPopupInterval = null;
+
+function mostrarPopupSorteoOrden(nombreEquipo, onFin) {
+    const popup    = $('sorteo-orden-popup');
+    const cuentaEl = $('sorteo-orden-cuenta');
+    const nombreEl = $('sorteo-orden-nombre');
+    const subEl    = $('sorteo-orden-sub');
+    const progreso = $('sorteo-reloj-progreso');
+    const agujaEl  = $('sorteo-reloj-seg');
+
+    const TOTAL   = 3;
+    const CIRCUNF = 276.46;
+    let cuenta    = TOTAL;
+
+    cuentaEl.textContent = cuenta;
+    cuentaEl.classList.remove('pulso', 'hidden');
+    nombreEl.classList.add('hidden');
+    nombreEl.textContent = nombreEquipo;
+    subEl.textContent    = '…';
+    progreso.style.transition = 'none';
+    progreso.style.strokeDashoffset = '0';
+    agujaEl.style.transition = 'none';
+    agujaEl.style.transform  = 'rotate(0deg)';
+    void progreso.getBoundingClientRect();
+    progreso.style.transition = 'stroke-dashoffset 1s linear';
+    agujaEl.style.transition  = 'transform 1s linear';
+    popup.classList.remove('hidden');
+
+    iniciarRedoble(TOTAL);
+
+    clearInterval(_sorteoPopupInterval);
+    _sorteoPopupInterval = setInterval(() => {
         cuenta--;
-        hazmePopupCuenta.textContent = cuenta;
-        if (cuenta <= 0) {
-            clearInterval(ruletaCuentaInterval);
-            ruletaCuentaInterval = null;
-            hazmePopup.classList.add('hidden');
-            if (chip) {
-                chip.classList.remove('iluminado');
-                chip.classList.add('seleccionado');
-            }
-            ruletaEquiposSeleccionados.push(eq.id);
-            renderRuletaEquipos();
+        progreso.style.strokeDashoffset = String(CIRCUNF * (1 - cuenta / TOTAL));
+        agujaEl.style.transform = `rotate(${(1 - cuenta / TOTAL) * 360}deg)`;
+        cuentaEl.classList.remove('pulso');
+        void cuentaEl.offsetWidth;
+        cuentaEl.classList.add('pulso');
 
-            // Minuto de Oro: mostrar la estrella con el nombre del equipo y resetear timer
-            if (prueba === 'minuto-oro') {
-                minutoOroEquipoA = eq.nombre;
-                minutoANombre.textContent = eq.nombre;
-                minutoOroCronos.classList.remove('hidden');
-                resetMinutoA();
-            }
+        if (cuenta <= 0) {
+            clearInterval(_sorteoPopupInterval);
+            _sorteoPopupInterval = null;
+            cuentaEl.classList.add('hidden');
+            subEl.textContent = '';
+            setTimeout(() => {
+                nombreEl.classList.remove('hidden');
+                subEl.textContent = '¡Empieza primero!';
+                golpeFinal();
+                setTimeout(() => {
+                    popup.classList.add('hidden');
+                    cuentaEl.classList.remove('hidden');
+                    cuentaEl.textContent = TOTAL;
+                    onFin();
+                }, 2000);
+            }, 400);
+        } else {
+            cuentaEl.textContent = cuenta;
         }
     }, 1000);
+}
+
+function _getAudioCtx() {
+    if (!window._sorteoAudioCtx || window._sorteoAudioCtx.state === 'closed') {
+        window._sorteoAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const ctx = window._sorteoAudioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+}
+
+function _baquetazo(ctx, time, vol) {
+    const sr = ctx.sampleRate;
+
+    const cLen = Math.floor(sr * 0.007);
+    const cBuf = ctx.createBuffer(1, cLen, sr);
+    const cd   = cBuf.getChannelData(0);
+    for (let i = 0; i < cLen; i++)
+        cd[i] = (Math.random() * 2 - 1) * Math.exp(-i / (sr * 0.0018));
+    const cSrc = ctx.createBufferSource(); cSrc.buffer = cBuf;
+    const cHP  = ctx.createBiquadFilter(); cHP.type = 'highpass'; cHP.frequency.value = 5500;
+    const cG   = ctx.createGain(); cG.gain.value = vol * 3.0;
+    cSrc.connect(cHP); cHP.connect(cG); cG.connect(ctx.destination);
+    cSrc.start(time); cSrc.stop(time + 0.009);
+
+    const pLen = Math.floor(sr * 0.07);
+    const pBuf = ctx.createBuffer(1, pLen, sr);
+    const pd   = pBuf.getChannelData(0);
+    for (let i = 0; i < pLen; i++) {
+        const s = i / sr;
+        pd[i] = (Math.random() * 2 - 1) * Math.exp(-s / 0.012)
+              + Math.sin(2 * Math.PI * 210 * s) * Math.exp(-s / 0.020) * 0.5;
+    }
+    const pSrc = ctx.createBufferSource(); pSrc.buffer = pBuf;
+    const pBP  = ctx.createBiquadFilter(); pBP.type = 'bandpass'; pBP.frequency.value = 1800; pBP.Q.value = 0.7;
+    const pG   = ctx.createGain(); pG.gain.setValueAtTime(vol, time);
+    pG.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
+    pSrc.connect(pBP); pBP.connect(pG); pG.connect(ctx.destination);
+    pSrc.start(time); pSrc.stop(time + 0.08);
+}
+
+function iniciarRedoble(duracionSegundos) {
+    try {
+        const ctx   = _getAudioCtx();
+        const start = ctx.currentTime + 0.08;
+        const end   = start + duracionSegundos - 0.35;
+
+        let t = start, interv = 0.19, idx = 0;
+        while (t < end) {
+            const prog = (t - start) / (end - start);
+            const vol = (0.25 + prog * 0.65) * (idx % 2 === 0 ? 1.0 : 0.72);
+            _baquetazo(ctx, t, vol);
+            t += interv;
+            interv = Math.max(0.034, interv * 0.924);
+            idx++;
+        }
+    } catch (e) { console.warn('Audio error:', e); }
+}
+
+function golpeFinal() {
+    try {
+        const ctx = _getAudioCtx();
+        const t   = ctx.currentTime + 0.05;
+
+        [261.6, 329.6, 392.0, 523.3].forEach((freq, i) => {
+            const o = ctx.createOscillator(); o.type = 'triangle';
+            const g = ctx.createGain();
+            o.frequency.value = freq;
+            g.gain.setValueAtTime(0, t + i * 0.035);
+            g.gain.linearRampToValueAtTime(0.20 - i * 0.02, t + i * 0.035 + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+            o.connect(g); g.connect(ctx.destination);
+            o.start(t + i * 0.035); o.stop(t + 1.1);
+        });
+
+        const len = Math.floor(ctx.sampleRate * 0.05);
+        const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+        const d   = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        const bp  = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3000; bp.Q.value = 0.8;
+        const g   = ctx.createGain();
+        g.gain.setValueAtTime(1.0, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+        src.start(t);
+    } catch (e) { console.warn('Audio error:', e); }
 }
 
 
@@ -1640,14 +1780,38 @@ let fabricaFin            = 0;
 let fabricaFase           = 'prep'; // 'prep' | 'discurso'
 let fabricaFaseNotificada = false;
 
+let resultadoTimerId       = null;
+let resultadoPopupPrepFn   = null;
+
+function mostrarPopupConTimer(popup, accionFn) {
+    clearTimeout(resultadoTimerId);
+    resultadoPopupPrepFn = accionFn;
+    popup.classList.remove('hidden');
+    const btn = $('btn-ir-crono');
+    btn.onclick = accionFn;
+    btn.classList.remove('hidden');
+    resultadoTimerId = setTimeout(() => popup.classList.add('hidden'), 5000);
+}
+
+function cerrarPopupActual() {
+    clearTimeout(resultadoTimerId);
+    resultadoTimerId = null;
+    const accion = resultadoPopupPrepFn;
+    resultadoPopupPrepFn = null;
+    fabricaPopup.classList.add('hidden');
+    $('resultado-popup').classList.add('hidden');
+    const btn = $('btn-ir-crono');
+    btn.onclick = null;
+    btn.classList.add('hidden');
+    if (accion) accion();
+}
+
 function montarFabricaPopup() {
-    fabricaPopupCerrar.addEventListener('click', () => {
-        fabricaPopup.classList.add('hidden');
-    });
-    // Cerrar también al pulsar fuera del contenido
-    fabricaPopup.addEventListener('click', e => {
-        if (e.target === fabricaPopup) fabricaPopup.classList.add('hidden');
-    });
+    fabricaPopupCerrar.addEventListener('click', cerrarPopupActual);
+    fabricaPopup.addEventListener('click', e => { if (e.target === fabricaPopup) cerrarPopupActual(); });
+
+    $('resultado-popup-cerrar').addEventListener('click', cerrarPopupActual);
+    $('resultado-popup').addEventListener('click', e => { if (e.target === $('resultado-popup')) cerrarPopupActual(); });
 }
 
 function mostrarFabricaPopup(resultados) {
@@ -1664,7 +1828,6 @@ function montarFabrica() {
     fabricaReset.addEventListener('click',    resetCronometroFabrica);
 }
 
-// Llamado tras girar Fábrica para mostrar y resetear el cronómetro doble.
 function prepararCronometroFabrica() {
     fabricaCrono.classList.remove('hidden');
     resetCronometroFabrica();
@@ -1672,7 +1835,9 @@ function prepararCronometroFabrica() {
 
 function pintarFabrica(ms) {
     const neg = ms < 0;
-    const abs = Math.ceil(Math.abs(ms) / 1000);
+    // Math.floor para cuenta regresiva (feedback inmediato en el 1er tick),
+    // Math.ceil para el tiempo en negativo (tiempo de descuento).
+    const abs = neg ? Math.ceil(Math.abs(ms) / 1000) : Math.floor(ms / 1000);
     const m = Math.floor(abs / 60).toString().padStart(2, '0');
     const s = (abs % 60).toString().padStart(2, '0');
     fabricaDisplay.textContent = `${neg ? '-' : ''}${m}:${s}`;
@@ -1682,6 +1847,7 @@ function pintarFabrica(ms) {
 }
 
 function iniciarFabricaPrep() {
+    mostrarCronoGigante('fabrica-display', 'Preparación', 'fabrica-botones');
     pararFabricaSilencioso();
     fabricaFase = 'prep';
     fabricaFaseNotificada = false;
@@ -1693,11 +1859,13 @@ function iniciarFabricaPrep() {
     fabricaIniciar.disabled  = true;
     fabricaDiscurso.disabled = true;
     fabricaPausar.disabled   = false;
-    fabricaEstado.textContent = '30 segundos para pensar la historia.';
+    fabricaEstado.textContent = '▶ 30 segundos para pensar la historia.';
+    pintarFabrica(fabricaRestanteMs - 1);
     iniciarFabricaTick();
 }
 
 function iniciarFabricaDiscurso() {
+    mostrarCronoGigante('fabrica-display', 'Fábrica de Historias', 'fabrica-botones');
     pararFabricaSilencioso();
     fabricaFase = 'discurso';
     fabricaFaseNotificada = false;
@@ -1709,7 +1877,8 @@ function iniciarFabricaDiscurso() {
     fabricaIniciar.disabled  = true;
     fabricaDiscurso.disabled = true;
     fabricaPausar.disabled   = false;
-    fabricaEstado.textContent = '2 minutos para contar la historia.';
+    fabricaEstado.textContent = '▶ 2 minutos para contar la historia.';
+    pintarFabrica(fabricaRestanteMs - 1);
     iniciarFabricaTick();
 }
 
@@ -1747,23 +1916,6 @@ function pararFabricaSilencioso() {
     fabricaIntervalo = null;
 }
 
-function terminarFabricaFase() {
-    pararFabricaSilencioso();
-    if (fabricaFase === 'prep') {
-        bip(880);
-        fabricaEstado.textContent = '¡Tiempo de preparación agotado! Pulsa "Iniciar discurso".';
-        fabricaIniciar.disabled  = true;
-        fabricaDiscurso.disabled = false;
-        fabricaPausar.disabled   = true;
-    } else {
-        bip(440);
-        fabricaEstado.textContent = '¡Fin del discurso!';
-        fabricaIniciar.disabled  = true;
-        fabricaDiscurso.disabled = true;
-        fabricaPausar.disabled   = true;
-    }
-}
-
 function resetCronometroFabrica() {
     pararFabricaSilencioso();
     fabricaFaseNotificada = false;
@@ -1773,9 +1925,9 @@ function resetCronometroFabrica() {
     fabricaDisplay.classList.remove('fase-discurso', 'crono-final');
     fabricaFaseNombre.textContent = 'Preparación';
     fabricaIniciar.disabled  = false;
-    fabricaDiscurso.disabled = true;
+    fabricaDiscurso.disabled = false;
     fabricaPausar.disabled   = true;
-    fabricaEstado.textContent = 'Pulsa "Iniciar preparación" cuando el equipo esté listo.';
+    fabricaEstado.textContent = 'Pulsa el botón de la fase que quieras iniciar.';
 }
 
 
@@ -1807,6 +1959,7 @@ function pintarVoces(ms) {
 }
 function iniciarCronometroVoces() {
     if (vocesEnMarcha) return;
+    mostrarCronoGigante('voces-display', 'Voces con Derecho', 'voces-botones');
     vocesEnMarcha = true;
     vocesFin = Date.now() + vocesRestanteMs;
     vocesIniciar.disabled = true;
@@ -1851,17 +2004,7 @@ function resetCronometroVoces() {
     vocesEstado.textContent = 'Pulsa "Iniciar" cuando el alumno empiece.';
 }
 
-function terminarCronometroVoces() {
-    pararVocesSilencioso();
-    vocesIniciar.disabled = false;
-    vocesPausar.disabled  = true;
-    vocesEstado.textContent = '¡Tiempo agotado!';
-    bip(660);
-}
-
-
 /* 13c) DUELO DE PERSONAJES — Elección de personaje + cronómetro doble */
-// = Mapa de imágenes por personaje 
 const DUELO_IMAGENES = {
     'Rafa Nadal':           'img/Rafael_nadal.jpg',
     'Carlos Alcaraz':       'img/Carlos_Alcaraz.jpg',
@@ -1875,7 +2018,6 @@ const DUELO_IMAGENES = {
     'Salvador Dalí':        'img/dali.jpg',
 };
 
-// ── Referencias DOM del pop-up de presentación ──────────────────
 const dueloPersonajesPopup  = $('duelo-personajes-popup');
 const dueloPopupCardA       = $('duelo-popup-card-a');
 const dueloPopupCardB       = $('duelo-popup-card-b');
@@ -1887,42 +2029,44 @@ const dueloPopupCuenta      = $('duelo-popup-cuenta');
 const dueloPopupEquipoA     = $('duelo-popup-equipo-a');
 const dueloPopupEquipoB     = $('duelo-popup-equipo-b');
 const dueloPopupSubtitulo   = $('duelo-popup-subtitulo');
-let dueloPersonajesPopupInterval = null; // Timer del pop-up de elección (10 s)
+let dueloPersonajesPopupInterval = null;
 
-// ── Constantes del cronómetro 
-const DUELO_PREP_MS = 60 * 1000;   
-const DUELO_ARG_MS  = 90 * 1000;   
+const DUELO_PREP_MS = 60 * 1000;
+const DUELO_ARG_MS  = 90 * 1000;
 
-// ── Variables de estado 
 let dueloIntervalo      = null;
 let dueloRestanteMs     = DUELO_PREP_MS;
-let dueloFin            = 0;            
-let dueloFase           = 'prep';       
+let dueloFin            = 0;
+let dueloFase           = 'prep';
 let dueloFaseNotificada = false;
 
-// ── Montaje 
-// Conecta todos los botones con sus funciones.
-// Se llama UNA SOLA VEZ al arrancar la app (desde init).
+function mostrarResultadoSeleccionDuelo(personaje) {
+    const img = DUELO_IMAGENES[personaje] || '';
+    resultadoDiv.innerHTML = `
+        <div class="resultado-seleccion-duelo">
+            ${img ? `<img src="${escapar(img)}" alt="${escapar(personaje)}" class="resultado-duelo-img">` : ''}
+            <div class="resultado-duelo-etiqueta">Personaje elegido</div>
+            <div class="resultado-duelo-nombre">${escapar(personaje)}</div>
+        </div>`;
+}
+
 function montarDuelo() {
-    // Botones de elección de personaje — van directo al cronómetro (sin segundo popup)
     dueloBtnA.addEventListener('click', () => {
         dueloEleccion.classList.add('hidden');
-        prepararCronometroDuelo();
+        mostrarResultadoSeleccionDuelo(dueloBtnA.textContent);
+        abrirCronoOverlay(prepararCronometroDuelo);
     });
     dueloBtnB.addEventListener('click', () => {
         dueloEleccion.classList.add('hidden');
-        prepararCronometroDuelo();
+        mostrarResultadoSeleccionDuelo(dueloBtnB.textContent);
+        abrirCronoOverlay(prepararCronometroDuelo);
     });
-    // Botones del cronómetro doble
     dueloIniciar.addEventListener('click',    iniciarDueloPrep);
     dueloArgumentar.addEventListener('click', iniciarDueloArgumentar);
     dueloPausar.addEventListener('click',     pausarDuelo);
     dueloReset.addEventListener('click',      resetCronometroDuelo);
 }
 
-// ── Muestra la elección 
-// Se llama desde mostrarResultado() cuando la prueba es de tipo 'dupla'.
-// Parte la cadena "A vs B" en dos nombres y los pone en cada botón.
 function mostrarEleccionDuelo(resultado) {
     const partes = resultado.split(' vs ');
     const pA = partes[0] ? partes[0].trim() : resultado;
@@ -1934,7 +2078,6 @@ function mostrarEleccionDuelo(resultado) {
     dueloEleccion.classList.add('hidden');
     pararDueloSilencioso();
 
-    // Rellenar el popup con las imágenes y nombres
     dueloPopupImgA.src = DUELO_IMAGENES[pA] || '';
     dueloPopupImgA.alt = pA;
     dueloPopupImgB.src = DUELO_IMAGENES[pB] || '';
@@ -1944,19 +2087,20 @@ function mostrarEleccionDuelo(resultado) {
     dueloPopupCuenta.textContent = '10';
     dueloPersonajesPopup.classList.remove('hidden');
 
-    // Al pulsar una carta: cerrar popup y abrir cronómetro directamente
-    function elegirDesdePopup() {
+    function cerrarPopupYElegir(personajeElegido) {
         clearInterval(dueloPersonajesPopupInterval);
         dueloPersonajesPopupInterval = null;
         dueloPersonajesPopup.classList.add('hidden');
-        dueloPopupCardA.removeEventListener('click', elegirDesdePopup);
-        dueloPopupCardB.removeEventListener('click', elegirDesdePopup);
-        prepararCronometroDuelo();
+        dueloPopupCardA.removeEventListener('click', elegirA);
+        dueloPopupCardB.removeEventListener('click', elegirB);
+        mostrarResultadoSeleccionDuelo(personajeElegido);
+        abrirCronoOverlay(prepararCronometroDuelo);
     }
-    dueloPopupCardA.addEventListener('click', elegirDesdePopup);
-    dueloPopupCardB.addEventListener('click', elegirDesdePopup);
+    const elegirA = () => cerrarPopupYElegir(pA);
+    const elegirB = () => cerrarPopupYElegir(pB);
+    dueloPopupCardA.addEventListener('click', elegirA);
+    dueloPopupCardB.addEventListener('click', elegirB);
 
-    // Cuenta atrás de 10 s; si se acaba sin elegir, muestra los botones de selección
     let cuenta = 10;
     clearInterval(dueloPersonajesPopupInterval);
     dueloPersonajesPopupInterval = setInterval(() => {
@@ -1965,23 +2109,20 @@ function mostrarEleccionDuelo(resultado) {
         if (cuenta <= 0) {
             clearInterval(dueloPersonajesPopupInterval);
             dueloPersonajesPopupInterval = null;
-            dueloPopupCardA.removeEventListener('click', elegirDesdePopup);
-            dueloPopupCardB.removeEventListener('click', elegirDesdePopup);
+            dueloPopupCardA.removeEventListener('click', elegirA);
+            dueloPopupCardB.removeEventListener('click', elegirB);
             dueloPersonajesPopup.classList.add('hidden');
             dueloEleccion.classList.remove('hidden');
         }
     }, 1000);
 }
 
-// ── Para el pop-up de elección silenciosamente 
-// Se llama cuando el profesor vuelve atrás o vuelve a girar la ruleta.
 function pararDueloEleccionSilencioso() {
     clearInterval(dueloPersonajesPopupInterval);
     dueloPersonajesPopupInterval = null;
     if (dueloPersonajesPopup) dueloPersonajesPopup.classList.add('hidden');
     if (dueloEleccion) dueloEleccion.classList.add('hidden');
 }
-// Muestra y resetea el cronómetro doble del duelo.
 function prepararCronometroDuelo() {
     dueloCrono.classList.remove('hidden');
     resetCronometroDuelo();
@@ -1996,6 +2137,7 @@ function pintarDuelo(ms) {
 }
 
 function iniciarDueloPrep() {
+    mostrarCronoGigante('duelo-display', 'Preparación', 'duelo-botones');
     pararDueloSilencioso();
     dueloFase = 'prep';
     dueloFaseNotificada = false;
@@ -2013,6 +2155,7 @@ function iniciarDueloPrep() {
 
 
 function iniciarDueloArgumentar() {
+    mostrarCronoGigante('duelo-display', 'Argumentación', 'duelo-botones');
     pararDueloSilencioso();
     dueloFase = 'argumentar';
     dueloFaseNotificada = false;
@@ -2020,7 +2163,7 @@ function iniciarDueloArgumentar() {
     dueloFin = Date.now() + dueloRestanteMs;
     dueloFaseNombre.textContent = 'Argumentación';
     dueloDisplay.classList.add('fase-argumentar');
-    dueloIniciar.disabled    = true;
+    dueloIniciar.disabled    = false;
     dueloArgumentar.disabled = true;
     dueloPausar.disabled     = false;
     dueloEstado.textContent = '1 minuto y medio para defender al personaje.';
@@ -2061,23 +2204,6 @@ function pararDueloSilencioso() {
     dueloIntervalo = null;
 }
 
-function terminarDueloFase() {
-    pararDueloSilencioso();
-    if (dueloFase === 'prep') {
-        bip(880);
-        dueloEstado.textContent = '¡Tiempo de preparación agotado! Pulsa "Iniciar argumentación".';
-        dueloIniciar.disabled    = true;
-        dueloArgumentar.disabled = false;
-        dueloPausar.disabled     = true;
-    } else {
-        bip(440);
-        dueloEstado.textContent = '¡Fin de la argumentación!';
-        dueloIniciar.disabled    = true;
-        dueloArgumentar.disabled = true;
-        dueloPausar.disabled     = true;
-    }
-}
-
 function resetCronometroDuelo() {
     pararDueloSilencioso();
     dueloFase = 'prep';
@@ -2087,7 +2213,7 @@ function resetCronometroDuelo() {
     dueloDisplay.classList.remove('fase-argumentar', 'crono-final');
     dueloFaseNombre.textContent = 'Preparación';
     dueloIniciar.disabled    = false;
-    dueloArgumentar.disabled = true;
+    dueloArgumentar.disabled = false;
     dueloPausar.disabled     = true;
     dueloEstado.textContent = 'Pulsa "Iniciar preparación" cuando los participantes estén listos.';
 }
@@ -2095,20 +2221,16 @@ function resetCronometroDuelo() {
 
 /* 13d) FINAL 1 — DECLAMACIÓN — Cronómetro doble (preparación + declamación) */
 
-// = Constantes del cronómetro  
-const DECLA_PREP_MS    = 2 * 60 * 1000;  // 2 minutos de preparación
-const DECLA_DISC_MS    = 2 * 60 * 1000;  // 2 minutos máximo de declamación
-const DECLA_MIN_MS     = 30 * 1000;      // cuando queden 30 s → mínimo de 1:30 cumplido
+const DECLA_PREP_MS    = 2 * 60 * 1000;
+const DECLA_DISC_MS    = 2 * 60 * 1000;
+const DECLA_MIN_MS     = 30 * 1000;
 
-// = Variables de estado  
-let declaIntervalo   = null;              // Timer (setInterval)
-let declaRestanteMs  = DECLA_PREP_MS;    // Milisegundos restantes en la fase actual
-let declaFin         = 0;                // Marca de tiempo (ms) en que termina la fase
-let declaFase        = 'prep';           // Fase actual: 'prep' | 'declamacion'
+let declaIntervalo   = null;
+let declaRestanteMs  = DECLA_PREP_MS;
+let declaFin         = 0;
+let declaFase        = 'prep';
 let declaFaseNotificada = false;
 
-// = Montaje  
-// Conecta los cuatro botones del cronómetro. Solo se llama una vez al arrancar.
 function montarDeclamacion() {
     declaIniciar.addEventListener('click',  iniciarDeclaPrep);
     declaDiscurso.addEventListener('click', iniciarDeclaDiscurso);
@@ -2116,16 +2238,11 @@ function montarDeclamacion() {
     declaReset.addEventListener('click',    resetDecla);
 }
 
-// = Preparar  
-// Se llama desde mostrarResultado() justo después de mostrar el texto.
-// Hace visible el cronómetro y lo resetea al estado inicial.
 function prepararCronometroDecla() {
     declaCrono.classList.remove('hidden');
     resetDecla();
 }
 
-// = Pintar el display  
-// Convierte milisegundos en "MM:SS" y aplica los colores de aviso.
 function pintarDecla(ms) {
     const neg = ms < 0;
     const abs = Math.ceil(Math.abs(ms) / 1000);
@@ -2142,8 +2259,8 @@ function pintarDecla(ms) {
     }
 }
 
-// = Iniciar preparación = //
 function iniciarDeclaPrep() {
+    mostrarCronoGigante('decla-display', 'Preparación', 'decla-botones');
     pararDeclaSilencioso();
     declaFase = 'prep';
     declaFaseNotificada = false;
@@ -2159,9 +2276,8 @@ function iniciarDeclaPrep() {
     iniciarDeclaTick();
 }
 
-// = Iniciar declamación = //
-// Se habilita automáticamente al terminar la fase de preparación.
 function iniciarDeclaDiscurso() {
+    mostrarCronoGigante('decla-display', 'Declamación', 'decla-botones');
     pararDeclaSilencioso();
     declaFase = 'declamacion';
     declaFaseNotificada = false;
@@ -2179,8 +2295,6 @@ function iniciarDeclaDiscurso() {
     iniciarDeclaTick();
 }
 
-// = Tick = //
-// setInterval llama a esto cada 200 ms para suavizar el display.
 function iniciarDeclaTick() {
     declaIntervalo = setInterval(() => {
         declaRestanteMs = declaFin - Date.now();
@@ -2205,7 +2319,6 @@ function iniciarDeclaTick() {
     }, 200);
 }
 
-// = Pausar = //
 function pausarDecla() {
     if (!declaIntervalo) return;
     clearInterval(declaIntervalo);
@@ -2217,32 +2330,10 @@ function pausarDecla() {
     declaEstado.textContent = 'Pausa — pulsa el botón de fase para seguir.';
 }
 
-// = Para silenciosamente = //
-// Cancela el timer sin cambiar nada en la pantalla.
-// Lo llaman ocultarSeccionesSorteo() e inicializarRuleta() para que
-// no queden contadores corriendo en segundo plano.
 function pararDeclaSilencioso() {
     clearInterval(declaIntervalo);
     declaIntervalo = null;
 }
-// ── Fin de fase 
-function terminarDeclaFase() {
-    pararDeclaSilencioso();
-    if (declaFase === 'prep') {
-        bip(880);
-        declaEstado.textContent = '¡Preparación terminada! Pulsa "Iniciar declamación".';
-        declaIniciar.disabled  = true;
-        declaDiscurso.disabled = false;
-        declaPausar.disabled   = true;
-    } else {
-        bip(440);
-        declaEstado.textContent = '¡Tiempo máximo agotado! Fin de la declamación.';
-        declaIniciar.disabled  = true;
-        declaDiscurso.disabled = true;
-        declaPausar.disabled   = true;
-    }
-}
-// ── Reiniciar  
 function resetDecla() {
     pararDeclaSilencioso();
     declaFase = 'prep';
@@ -2253,60 +2344,51 @@ function resetDecla() {
     delete declaDisplay.dataset.avisoMin;
     declaFaseNombre.textContent = 'Preparación';
     declaIniciar.disabled  = false;
-    declaDiscurso.disabled = true;
+    declaDiscurso.disabled = false;
     declaPausar.disabled   = true;
     declaEstado.textContent = 'Pulsa "Iniciar preparación" cuando el alumno esté listo.';
 }
 
 
 /*13e) FINAL 2 — LA PALABRA CALIENTE — Cronómetro de intervenciones*/
-// ── Constantes  
-const PALABRA_PREP_SEG  = 15;  // PREPARACION 
-const PALABRA_TURNO_SEG = 20;  // segundos por turno (límite máximo)
-const PALABRA_TURNOS    = 6;   // 6 turnos: 3 por Participante A + 3 por B
+const PALABRA_PREP_SEG  = 15;
+const PALABRA_TURNO_SEG = 20;
+const PALABRA_TURNOS    = 6;
 let palabraTurnoIdx      = 0;
 let palabraIntervalo     = null;
 let palabraFinInterval   = null;
 let palabraRestanteMs    = PALABRA_TURNO_SEG * 1000;
 let palabraSegFin        = 0;
 let palabraEnMarcha      = false;
-let palabraEnPrep        = false;   
-let palabraPrepRealizada = false;   
-let palabraMarcasA       = 0;   // intervenciones completadas por Participante A
-let palabraMarcasB       = 0;   // intervenciones completadas por Participante B
+let palabraEnPrep        = false;
+let palabraPrepRealizada = false;
+let palabraMarcasA       = 0;
+let palabraMarcasB       = 0;
 
-// ── Montaje  
-// Conecta los tres botones del panel. Se llama UNA vez al arrancar.
 function montarPalabraCaliente() {
     palabraIniciarBtn.addEventListener('click', iniciarPalabraCaliente);
     palabraPausarBtn.addEventListener('click',  pausarPalabraCaliente);
     palabraResetBtn.addEventListener('click',   resetPalabraCaliente);
 }
 
-// ── Crear el contador  
-// Muestra los segundos restantes en el bloque de color.
-// En los últimos 5 s añade la clase 'crono-urgente' (número pulsa).
 function pintarPalabraCaliente(ms) {
     const seg = Math.max(0, Math.ceil(ms / 1000));
     palabraCuentaDisplayEl.textContent = `0:${seg.toString().padStart(2, '0')}`;
     palabraCuentaDisplayEl.classList.toggle('crono-urgente', ms <= 5000);
 }
 
-// ── Iniciar  
-// Arranca el contador del turno activo.
 function iniciarPalabraCaliente() {
     if (palabraEnMarcha) return;
+    mostrarCronoGigante('palabra-cuenta-display', 'La Palabra Caliente', 'palabra-botones');
     palabraEnMarcha = true;
 
     if (!palabraPrepRealizada && !palabraEnPrep) {
-        // Primera vez: arrancar la fase de preparación
         palabraEnPrep     = true;
         palabraRestanteMs = PALABRA_PREP_SEG * 1000;
         palabraSegFin     = Date.now() + palabraRestanteMs;
         renderTurnoPalabra();
         palabraCronoEstado.textContent = '¡Preparaos! 15 segundos antes de la primera intervención.';
     } else {
-        // Reanudar tras pausa (en prep o en turno)
         palabraSegFin = Date.now() + palabraRestanteMs;
         palabraCronoEstado.textContent = palabraEnPrep
             ? '¡Preparaos! 15 segundos antes de la primera intervención.'
@@ -2344,9 +2426,6 @@ function palabraTick() {
     }
 }
 
-// ── Avanzar turno 
-// Al llegar a 0 s: añade el palito del participante activo y pasa
-// al siguiente turno (o termina si ya se hicieron los 6).
 function avanzarTurnoPalabra() {
     if (palabraTurnoIdx % 2 === 0) palabraMarcasA++;
     else                            palabraMarcasB++;
@@ -2369,8 +2448,6 @@ function avanzarTurnoPalabra() {
     palabraCronoEstado.textContent = turnoDescripcionPalabra();
 }
 
-// ── Pausar 
-// Detiene el contador sin perder el tiempo restante.
 function pausarPalabraCaliente() {
     if (!palabraEnMarcha) return;
     clearInterval(palabraIntervalo);
@@ -2382,7 +2459,6 @@ function pausarPalabraCaliente() {
     palabraCronoEstado.textContent = 'Pausa — pulsa Iniciar para continuar.';
 }
 
-// ── Para silenciosamente
 function pararPalabraCalienteSilencioso() {
     clearInterval(palabraIntervalo);
     palabraIntervalo = null;
@@ -2391,22 +2467,17 @@ function pararPalabraCalienteSilencioso() {
     palabraEnMarcha = false;
 }
 
-// ── Fin del juego 
-
 function terminarPalabraCaliente() {
     bip(660);
-    setTimeout(() => bip(660), 350); // doble bip de fin
+    setTimeout(() => bip(660), 350);
     palabraCronoEstado.textContent = '¡Las 6 intervenciones han concluido!';
 
-    // Reutilizamos el pop-up compartido con texto personalizado.
-    // Es el mismo pop-up que usa el selector de equipos (#hazme-popup).
     const popupEquipoEl = document.querySelector('.hazme-popup-equipo');
     if (popupEquipoEl) popupEquipoEl.textContent = '¡Tiempo agotado!';
     hazmePopupNombre.textContent  = '3 intervenciones por participante';
     hazmePopupCuenta.textContent  = '✓';
     hazmePopup.classList.remove('hidden');
 
-    // Cuenta atrás de 5 s que cierra el pop-up automáticamente.
     let cuenta = 5;
     clearInterval(palabraFinInterval);
     palabraFinInterval = setInterval(() => {
@@ -2417,15 +2488,11 @@ function terminarPalabraCaliente() {
             clearInterval(palabraFinInterval);
             palabraFinInterval = null;
             hazmePopup.classList.add('hidden');
-            // Restauramos el texto del pop-up para el selector de equipos
             if (popupEquipoEl) popupEquipoEl.textContent = '¡Le toca a!';
         }
     }, 1000);
 }
 
-// ── Reiniciar 
-// Deja todo en el estado inicial: turno 0 (A), sin palitos.
-// Se llama al cargar el CSV y al girar para una nueva situación.
 function resetPalabraCaliente() {
     pararPalabraCalienteSilencioso();
     palabraTurnoIdx      = 0;
@@ -2443,7 +2510,6 @@ function resetPalabraCaliente() {
     palabraCronoEstado.textContent = 'Pulsa Iniciar para comenzar la preparación (15 s).';
 }
 
-// ── Actualizar display del turno
 function renderTurnoPalabra() {
     if (palabraEnPrep) {
         palabraTurnoDisplayEl.classList.remove('turno-a', 'turno-b');
@@ -2462,7 +2528,6 @@ function renderTurnoPalabra() {
     palabraCuentaDisplayEl.classList.remove('crono-urgente');
 }
 
-// ── Descripción del turno (texto de estado) 
 function turnoDescripcionPalabra() {
     const esA     = palabraTurnoIdx % 2 === 0;
     const quien   = esA ? 'Participante A' : 'Participante B';
@@ -2470,7 +2535,6 @@ function turnoDescripcionPalabra() {
     return `${quien} — intervención ${nInterv}/3. ¡20 segundos!`;
 }
 
-// ── Palitos (sistema de tachado visual) ─
 function renderPalitos() {
     if (!palitosA || !palitosB) return;
     palitosA.innerHTML = generarPalitos(palabraMarcasA);
@@ -2480,7 +2544,6 @@ function renderPalitos() {
 function generarPalitos(n) {
     let html = '';
     for (let i = 0; i < n; i++) {
-        // Solo el último palito lleva la animación de entrada
         const ultimo = i === n - 1 ? ' palito-ultimo' : '';
         html += `<span class="palito${ultimo}"></span>`;
     }
@@ -2489,35 +2552,30 @@ function generarPalitos(n) {
 
 
 /* 13f) FINAL 3 — DUELO DE PERSONAJES FINAL — Sorteo de equipos + cronómetro*/
-// ── Constantes 
-const DUELO_FINAL_PREP_MS     = 60 * 1000;  // 1 min de preparación conjunta
-const DUELO_FINAL_EXPO_MS     = 60 * 1000;  // 1 min de exposición por equipo
-const DUELO_FINAL_REPLICA_SEG = 30;          // segundos por turno de réplica
-const DUELO_FINAL_REPLICAS    = 6;           // 6 turnos = 3 réplicas por equipo
+const DUELO_FINAL_PREP_MS     = 60 * 1000;
+const DUELO_FINAL_EXPO_MS     = 60 * 1000;
+const DUELO_FINAL_REPLICA_SEG = 30;
+const DUELO_FINAL_REPLICAS    = 6;
 
-// ── Variables de estado 
-let dueloFinalEquipoA     = '';      // nombre del equipo que defiende al personaje A
-let dueloFinalEquipoB     = '';      // nombre del equipo que defiende al personaje B
-let dueloFinalPersonajeA  = '';      // nombre del personaje A (de la dupla sorteada)
-let dueloFinalPersonajeB  = '';      // nombre del personaje B
+let dueloFinalEquipoA     = '';
+let dueloFinalEquipoB     = '';
+let dueloFinalPersonajeA  = '';
+let dueloFinalPersonajeB  = '';
 
-let dueloFinalFase         = 'prep'; // 'prep' | 'expo-a' | 'expo-b' | 'replica' - fases del duelo final
-let dueloFinalIntervalo    = null;   // setInterval del cronómetro de la fase activa
-let dueloFinalRestanteMs   = DUELO_FINAL_PREP_MS; // milisegundos que quedan
-let dueloFinalFin          = 0;      // timestamp del momento en que termina la fase
+let dueloFinalFase         = 'prep';
+let dueloFinalIntervalo    = null;
+let dueloFinalRestanteMs   = DUELO_FINAL_PREP_MS;
+let dueloFinalFin          = 0;
 let dueloFinalFaseNotificada = false;
 
-let dueloFinalAsignarInterval = null; // timer del pop-up de asignación de equipos
-let dueloFinalFinInterval     = null; // timer del pop-up de fin de duelo
-let duelFinalActivo           = 1;    // 1 = Duelo 1 (eq1 vs eq2)  |  2 = Duelo 2 (eq3 vs eq4)
+let dueloFinalAsignarInterval = null;
+let dueloFinalFinInterval     = null;
+let dueloFinalActivo           = 1;
 
-let dueloFinalReplicaIdx  = 0;  // turno de réplica activo 
-let dueloFinalReplicasA   = 0;  // réplicas completadas por el equipo A
-let dueloFinalReplicasB   = 0;  // réplicas completadas por el equipo B
+let dueloFinalReplicaIdx  = 0;
+let dueloFinalReplicasA   = 0;
+let dueloFinalReplicasB   = 0;
 
-// ── Montaje 
-// Conecta todos los botones del panel con sus funciones.
-// Se llama UNA SOLA VEZ al arrancar la app (desde init).
 function montarDueloFinal() {
     dueloFinalAsignarBtn.addEventListener('click',     sortearEquiposDueloFinal);
     dueloFinalIniciarPrep.addEventListener('click',    iniciarDueloFinalPrep);
@@ -2535,40 +2593,33 @@ function montarDueloFinal() {
         resetDueloFinalUI();
     });
 }
-// ── Mostrar botón de sorteo 
-
 function mostrarAsignacionFinalDuelo(resultado) {
     const partes = resultado.split(' vs ');
     dueloFinalPersonajeA = partes[0] ? partes[0].trim() : resultado;
     dueloFinalPersonajeB = partes[1] ? partes[1].trim() : '—';
 
-    // Mostramos el botón de sorteo; el panel cronómetro permanece oculto
     dueloFinalAsignarDiv.classList.remove('hidden');
     dueloFinalPanel.classList.add('hidden');
 }
 
-// ── Sortear equipos
 function sortearEquiposDueloFinal() {
-    const eqA = duelFinalActivo === 1 ? finalEquipo1 : finalEquipo3;
-    const eqB = duelFinalActivo === 1 ? finalEquipo2 : finalEquipo4;
+    const eqA = dueloFinalActivo === 1 ? finalEquipo1 : finalEquipo3;
+    const eqB = dueloFinalActivo === 1 ? finalEquipo2 : finalEquipo4;
 
     if (!eqA || !eqB) {
         dueloFinalEstado.textContent = 'Primero realiza el sorteo de emparejamientos.';
         return;
     }
 
-    // Avanzar al siguiente duelo para la próxima ruleta
-    duelFinalActivo = duelFinalActivo === 1 ? 2 : 1;
+    dueloFinalActivo = dueloFinalActivo === 1 ? 2 : 1;
 
     const [t1, t2] = Math.random() < 0.5 ? [eqA, eqB] : [eqB, eqA];
 
     dueloFinalEquipoA = t1.nombre;
     dueloFinalEquipoB = t2.nombre;
 
-    // Bloqueamos el botón durante el pop-up para evitar dobles pulsaciones
     dueloFinalAsignarBtn.disabled = true;
 
-    // Mostrar fotos y nombres de personajes
     dueloPopupImgA.src = DUELO_IMAGENES[dueloFinalPersonajeA] || '';
     dueloPopupImgA.alt = dueloFinalPersonajeA;
     dueloPopupImgB.src = DUELO_IMAGENES[dueloFinalPersonajeB] || '';
@@ -2576,24 +2627,20 @@ function sortearEquiposDueloFinal() {
     dueloPopupNombreA.textContent = dueloFinalPersonajeA;
     dueloPopupNombreB.textContent = dueloFinalPersonajeB;
 
-    // Mostrar el equipo asignado a cada personaje
     dueloPopupEquipoA.textContent = dueloFinalEquipoA;
     dueloPopupEquipoB.textContent = dueloFinalEquipoB;
     dueloPopupEquipoA.classList.remove('hidden');
     dueloPopupEquipoB.classList.remove('hidden');
 
-    // Ocultar el label de elección (no es una fase de elección) y cambiar subtítulo
     document.querySelectorAll('.duelo-popup-elegir-label').forEach(el => el.classList.add('hidden'));
     dueloPopupSubtitulo.textContent = '¡Asignación por sorteo!';
 
-    // Las tarjetas no son clicables en la fase final
     dueloPopupCardA.disabled = true;
     dueloPopupCardB.disabled = true;
 
     dueloPopupCuenta.textContent = '10';
     dueloPersonajesPopup.classList.remove('hidden');
 
-    // Cuenta atrás de 10 s
     let cuenta = 10;
     clearInterval(dueloFinalAsignarInterval);
     dueloFinalAsignarInterval = setInterval(() => {
@@ -2603,26 +2650,21 @@ function sortearEquiposDueloFinal() {
             clearInterval(dueloFinalAsignarInterval);
             dueloFinalAsignarInterval = null;
             dueloPersonajesPopup.classList.add('hidden');
-            // Restaurar el popup al estado normal para la fase de clasificación
             dueloPopupEquipoA.classList.add('hidden');
             dueloPopupEquipoB.classList.add('hidden');
             document.querySelectorAll('.duelo-popup-elegir-label').forEach(el => el.classList.remove('hidden'));
             dueloPopupSubtitulo.textContent = 'Pulsa al personaje que vas a defender';
             dueloPopupCardA.disabled = false;
             dueloPopupCardB.disabled = false;
-            // Una vez cerrado el pop-up, activamos el panel del cronómetro
             activarPanelDueloFinal();
         }
     }, 1000);
 }
 
-// ── Para el timer del pop-up de sorteo silenciosamente 
-// Se llama cuando el profesor cambia de prueba o vuelve a girar la ruleta,
 function pararAsignarDueloFinalSilencioso() {
     clearInterval(dueloFinalAsignarInterval);
     dueloFinalAsignarInterval = null;
     if (dueloPersonajesPopup) dueloPersonajesPopup.classList.add('hidden');
-    // Restaurar el popup al estado normal por si se interrumpió a mitad
     if (dueloPopupEquipoA) dueloPopupEquipoA.classList.add('hidden');
     if (dueloPopupEquipoB) dueloPopupEquipoB.classList.add('hidden');
     document.querySelectorAll('.duelo-popup-elegir-label').forEach(el => el.classList.remove('hidden'));
@@ -2631,19 +2673,36 @@ function pararAsignarDueloFinalSilencioso() {
     if (dueloPopupCardB) dueloPopupCardB.disabled = false;
 }
 
-// ── Activar el panel del cronómetro 
 function activarPanelDueloFinal() {
-    // Poner los nombres de los equipos en la tabla de réplicas
+    const btn = $('btn-ir-crono');
+    btn.onclick = () => abrirCronoOverlay(prepararDueloFinalCrono, ['duelo-final-panel']);
+    btn.classList.remove('hidden');
+}
+
+function prepararDueloFinalCrono() {
+    dueloFinalAsignarDiv.classList.add('hidden');
     replicaNombreA.textContent = dueloFinalEquipoA;
     replicaNombreB.textContent = dueloFinalEquipoB;
+    dueloFinalIniciarExpoA.textContent = `Exposición: ${dueloFinalEquipoA} (1:00)`;
+    dueloFinalIniciarExpoB.textContent = `Exposición: ${dueloFinalEquipoB} (1:00)`;
 
-    // Actualizar el texto de los botones de exposición con los nombres reales
-    dueloFinalIniciarExpoA.textContent =
-        `Exposición: ${dueloFinalEquipoA} (1:00)`;
-    dueloFinalIniciarExpoB.textContent =
-        `Exposición: ${dueloFinalEquipoB} (1:00)`;
+    const imgA = DUELO_IMAGENES[dueloFinalPersonajeA] || '';
+    const imgB = DUELO_IMAGENES[dueloFinalPersonajeB] || '';
+    resultadoDiv.innerHTML = `
+        <div class="resultado-duelo-final-dupla">
+            <div class="resultado-duelo-card">
+                ${imgA ? `<img src="${escapar(imgA)}" alt="${escapar(dueloFinalPersonajeA)}" class="resultado-duelo-img">` : ''}
+                <div class="resultado-duelo-nombre">${escapar(dueloFinalPersonajeA)}</div>
+                <div class="resultado-duelo-equipo">${escapar(dueloFinalEquipoA)}</div>
+            </div>
+            <div class="resultado-duelo-vs">VS</div>
+            <div class="resultado-duelo-card">
+                ${imgB ? `<img src="${escapar(imgB)}" alt="${escapar(dueloFinalPersonajeB)}" class="resultado-duelo-img">` : ''}
+                <div class="resultado-duelo-nombre">${escapar(dueloFinalPersonajeB)}</div>
+                <div class="resultado-duelo-equipo">${escapar(dueloFinalEquipoB)}</div>
+            </div>
+        </div>`;
 
-    // Mostrar el panel y preparar el cronómetro
     dueloFinalPanel.classList.remove('hidden');
     dueloFinalFase       = 'prep';
     dueloFinalRestanteMs = DUELO_FINAL_PREP_MS;
@@ -2653,8 +2712,6 @@ function activarPanelDueloFinal() {
     resetDueloFinalUI();
 }
 
-// ── Pintar el display 
-// Convierte milisegundos en "MM:SS" y aplica el aviso visual de urgencia.
 function pintarDueloFinal(ms) {
     const neg = ms < 0;
     const abs = Math.ceil(Math.abs(ms) / 1000);
@@ -2664,10 +2721,8 @@ function pintarDueloFinal(ms) {
     const umbral = dueloFinalFase === 'replica' ? 5000 : 10000;
     dueloFinalDisplayEl.classList.toggle('crono-urgente', ms <= umbral);
 }
-// ── Iniciar preparación 
-// Fase 1: 1 minuto para que ambos equipos lean y preparen sus argumentos.
 function iniciarDueloFinalPrep() {
-    // Si ya estamos en fase prep (pausa-reanuda), no reiniciamos el tiempo
+    mostrarCronoGigante('duelo-final-display', 'Preparación', 'duelo-final-botones');
     if (dueloFinalFase !== 'prep') {
         dueloFinalFase = 'prep';
         dueloFinalRestanteMs = DUELO_FINAL_PREP_MS;
@@ -2680,18 +2735,13 @@ function iniciarDueloFinalPrep() {
     dueloFinalQuienEl.textContent = 'Preparación';
     dueloFinalFaseInfoEl.textContent = 'Fase 1 de 4';
     dueloFinalIniciarPrep.disabled = true;
-    dueloFinalIniciarExpoA.classList.add('hidden');
-    dueloFinalIniciarExpoB.classList.add('hidden');
-    dueloFinalIniciarReplica.classList.add('hidden');
     dueloFinalPausarBtn.disabled = false;
     dueloFinalEstado.textContent = '1 minuto para que ambos equipos preparen sus argumentos.';
     dueloFinalIntervalo = setInterval(dueloFinalTick, 200);
 }
 
-// ── Iniciar exposición del equipo A 
-// Fase 2: 1 minuto de exposición inicial para el equipo asignado al personaje A.
 function iniciarDueloFinalExpoA() {
-    // Si venimos de otra fase (no de pausa en expo-a), reiniciamos el tiempo
+    mostrarCronoGigante('duelo-final-display', 'Exposición A', 'duelo-final-botones');
     if (dueloFinalFase !== 'expo-a') {
         dueloFinalFase = 'expo-a';
         dueloFinalRestanteMs = DUELO_FINAL_EXPO_MS;
@@ -2703,18 +2753,14 @@ function iniciarDueloFinalExpoA() {
     dueloFinalBloque.className = 'duelo-final-bloque turno-a';
     dueloFinalQuienEl.textContent = dueloFinalEquipoA;
     dueloFinalFaseInfoEl.textContent = 'Fase 2 de 4';
-    dueloFinalIniciarPrep.classList.add('hidden');
     dueloFinalIniciarExpoA.disabled = true;
-    dueloFinalIniciarExpoB.classList.add('hidden');
-    dueloFinalIniciarReplica.classList.add('hidden');
     dueloFinalPausarBtn.disabled = false;
     dueloFinalEstado.textContent = `1 minuto de exposición inicial para ${dueloFinalEquipoA}.`;
     dueloFinalIntervalo = setInterval(dueloFinalTick, 200);
 }
 
-// ── Iniciar exposición del equipo B
-// Fase 3: 1 minuto de exposición inicial para el equipo asignado al personaje B.
 function iniciarDueloFinalExpoB() {
+    mostrarCronoGigante('duelo-final-display', 'Exposición B', 'duelo-final-botones');
     if (dueloFinalFase !== 'expo-b') {
         dueloFinalFase = 'expo-b';
         dueloFinalRestanteMs = DUELO_FINAL_EXPO_MS;
@@ -2726,22 +2772,15 @@ function iniciarDueloFinalExpoB() {
     dueloFinalBloque.className = 'duelo-final-bloque turno-b';
     dueloFinalQuienEl.textContent = dueloFinalEquipoB;
     dueloFinalFaseInfoEl.textContent = 'Fase 3 de 4';
-    dueloFinalIniciarPrep.classList.add('hidden');
-    dueloFinalIniciarExpoA.classList.add('hidden');
     dueloFinalIniciarExpoB.disabled = true;
-    dueloFinalIniciarReplica.classList.add('hidden');
     dueloFinalPausarBtn.disabled = false;
     dueloFinalEstado.textContent = `1 minuto de exposición inicial para ${dueloFinalEquipoB}.`;
     dueloFinalIntervalo = setInterval(dueloFinalTick, 200);
 }
 
-// ── Iniciar fase de réplicas 
-// Fase 4: 6 turnos de 30 s alternos (A-B-A-B-A-B = 3 réplicas por equipo).
-// Si estamos reanudando desde pausa (dueloFinalFase === 'replica'),
-// conservamos el replicaIdx y los palitos ya anotados.
 function iniciarDueloFinalReplica() {
+    mostrarCronoGigante('duelo-final-display', 'Réplicas', 'duelo-final-botones');
     if (dueloFinalFase !== 'replica') {
-        // Primera vez: reiniciamos todo el estado de réplicas
         dueloFinalFase       = 'replica';
         dueloFinalReplicaIdx = 0;
         dueloFinalReplicasA  = 0;
@@ -2754,17 +2793,12 @@ function iniciarDueloFinalReplica() {
     pararDueloFinalSilencioso();
     dueloFinalFin = Date.now() + dueloFinalRestanteMs;
 
-    dueloFinalIniciarPrep.classList.add('hidden');
-    dueloFinalIniciarExpoA.classList.add('hidden');
-    dueloFinalIniciarExpoB.classList.add('hidden');
     dueloFinalIniciarReplica.disabled = true;
     dueloFinalPausarBtn.disabled = false;
     dueloFinalEstado.textContent = turnoDescripcionReplicaDueloFinal();
     dueloFinalIntervalo = setInterval(dueloFinalTick, 100);
 }
 
-// ── Tick principal (200 ms fases 1-3 · 100 ms réplicas) ──────────
-// Recalcula cuánto queda y, al llegar a 0, cierra la fase.
 function dueloFinalTick() {
     dueloFinalRestanteMs = dueloFinalFin - Date.now();
     pintarDueloFinal(dueloFinalRestanteMs);
@@ -2796,7 +2830,6 @@ function dueloFinalTick() {
     }
 }
 
-// ── Fin de fase
 function terminarFaseDueloFinal() {
     pararDueloFinalSilencioso();
 
@@ -2835,13 +2868,11 @@ function terminarFaseDueloFinal() {
         dueloFinalReplicaIdx++;
 
         if (dueloFinalReplicaIdx >= DUELO_FINAL_REPLICAS) {
-            // Todas las réplicas completadas: mostrar pop-up de fin
             dueloFinalPausarBtn.disabled = true;
             terminarDueloFinal();
             return;
         }
 
-        // Pasar al siguiente turno: actualizar display y seguir automáticamente
         bip(880);
         dueloFinalRestanteMs = DUELO_FINAL_REPLICA_SEG * 1000;
         dueloFinalFin        = Date.now() + dueloFinalRestanteMs;
@@ -2851,9 +2882,6 @@ function terminarFaseDueloFinal() {
     }
 }
 
-// ── Descripción del turno de réplica (texto de estado)
-// Igual que turnoDescripcionPalabra en La Palabra Caliente:
-//   Math.floor(replicaIdx / 2) + 1 da 1 para los turnos 0-1, 2 para 2-3, 3 para 4-5.
 function turnoDescripcionReplicaDueloFinal() {
     const esA   = dueloFinalReplicaIdx % 2 === 0;
     const quien = esA ? dueloFinalEquipoA : dueloFinalEquipoB;
@@ -2861,10 +2889,8 @@ function turnoDescripcionReplicaDueloFinal() {
     return `${quien} — réplica ${nRep}/3. ¡30 segundos!`;
 }
 
-// ── Actualizar bloque de color y etiquetas en réplicas 
 function renderTurnoReplicaDueloFinal() {
     const esA = dueloFinalReplicaIdx % 2 === 0;
-    // classList.toggle añade o quita la clase según el segundo parámetro
     dueloFinalBloque.className = 'duelo-final-bloque ' + (esA ? 'turno-a' : 'turno-b');
     dueloFinalQuienEl.textContent = esA ? dueloFinalEquipoA : dueloFinalEquipoB;
     dueloFinalFaseInfoEl.textContent =
@@ -2873,17 +2899,12 @@ function renderTurnoReplicaDueloFinal() {
     pintarDueloFinal(dueloFinalRestanteMs);
 }
 
-// ── Tabla de réplicas (palitos) 
-// Reutiliza generarPalitos(n) de la sección 13e (mismo ámbito global).
 function renderReplicasDueloFinal() {
     if (!replicasAEl || !replicasBEl) return;
     replicasAEl.innerHTML = generarPalitos(dueloFinalReplicasA);
     replicasBEl.innerHTML = generarPalitos(dueloFinalReplicasB);
 }
 
-// ── Pausar 
-// Detiene el contador sin perder el tiempo restante.
-// Reactiva el botón de la fase activa para que el profesor pueda reanudar.
 function pausarDueloFinal() {
     if (!dueloFinalIntervalo) return;
     clearInterval(dueloFinalIntervalo);
@@ -2897,9 +2918,6 @@ function pausarDueloFinal() {
     dueloFinalEstado.textContent = 'Pausa — pulsa el botón de fase para continuar.';
 }
 
-// ── Para silenciosamente 
-// Cancela los dos timers posibles sin tocar la pantalla.
-// Lo llaman ocultarSeccionesSorteo() y girarRuleta().
 function pararDueloFinalSilencioso() {
     clearInterval(dueloFinalIntervalo);
     dueloFinalIntervalo = null;
@@ -2907,12 +2925,9 @@ function pararDueloFinalSilencioso() {
     dueloFinalFinInterval = null;
 }
 
-// ── Fin del duelo 
-// Muestra el pop-up de fin tras completar las 6 réplicas (3 por equipo).
-// El pop-up se cierra automáticamente tras 5 s.
 function terminarDueloFinal() {
     bip(660);
-    setTimeout(() => bip(660), 350); // doble bip de fin (igual que en Palabra Caliente)
+    setTimeout(() => bip(660), 350);
     dueloFinalEstado.textContent = '¡Duelo finalizado! Todas las réplicas completadas.';
 
     const popupEquipoEl = document.querySelector('.hazme-popup-equipo');
@@ -2938,9 +2953,6 @@ function terminarDueloFinal() {
     }, 1000);
 }
 
-// ── Reiniciar UI 
-// Deja el panel visible en estado inicial: fase prep, botones listos.
-// Se llama desde activarPanelDueloFinal() y desde el botón Reiniciar.
 function resetDueloFinalUI() {
     dueloFinalFaseNotificada = false;
     pintarDueloFinal(DUELO_FINAL_PREP_MS);
@@ -2950,11 +2962,11 @@ function resetDueloFinalUI() {
     dueloFinalDisplayEl.classList.remove('crono-urgente');
     dueloFinalIniciarPrep.disabled    = false;
     dueloFinalIniciarPrep.classList.remove('hidden');
-    dueloFinalIniciarExpoA.classList.add('hidden');
+    dueloFinalIniciarExpoA.classList.remove('hidden');
     dueloFinalIniciarExpoA.disabled   = false;
-    dueloFinalIniciarExpoB.classList.add('hidden');
+    dueloFinalIniciarExpoB.classList.remove('hidden');
     dueloFinalIniciarExpoB.disabled   = false;
-    dueloFinalIniciarReplica.classList.add('hidden');
+    dueloFinalIniciarReplica.classList.remove('hidden');
     dueloFinalIniciarReplica.disabled = false;
     dueloFinalPausarBtn.disabled = true;
     dueloFinalReplicasTabla.classList.add('hidden');
@@ -2962,8 +2974,6 @@ function resetDueloFinalUI() {
     dueloFinalEstado.textContent = 'Pulsa "Iniciar preparación" cuando los equipos estén listos.';
 }
 
-// ── Reiniciar estado (sin UI) 
-// Limpia las variables de estado y reactiva el botón de sorteo.
 function resetDueloFinal() {
     pararDueloFinalSilencioso();
     dueloFinalFase       = 'prep';
@@ -2971,21 +2981,20 @@ function resetDueloFinal() {
     dueloFinalReplicaIdx = 0;
     dueloFinalReplicasA  = 0;
     dueloFinalReplicasB  = 0;
-    duelFinalActivo      = 1;
+    dueloFinalActivo      = 1;
     if (dueloFinalAsignarBtn) dueloFinalAsignarBtn.disabled = false;
 }
 
 
 /*13g) FINAL 4 — EL MINUTO DE ORO — Dos cronómetros en estrella*/
 
-// ── Constante  
-const MINUTO_ORO_MS = 60 * 1000;  // 1 minuto exacto para cada equipo
+const MINUTO_ORO_MS = 60 * 1000;
 
-// ── Variables de estado  
-let minutoOroEquipoA = '';   // nombre del equipo asignado a la estrella A
-let minutoOroEquipoB = '';   // nombre del equipo asignado a la estrella B
+let minutoOroEquipoA = '';
+let minutoOroEquipoB = '';
+let minutoOroEquipoC = '';
+let minutoOroEquipoD = '';
 
-// Timer de la estrella A
 let minutoAIntervalo    = null;
 let minutoARestanteMs   = MINUTO_ORO_MS;
 let minutoAFin          = 0;
@@ -2993,7 +3002,6 @@ let minutoAEnMarcha     = false;
 let minutoATerminado    = false;
 let minutoANotificada   = false;
 
-// Timer de la estrella B
 let minutoBIntervalo    = null;
 let minutoBRestanteMs   = MINUTO_ORO_MS;
 let minutoBFin          = 0;
@@ -3001,12 +3009,23 @@ let minutoBEnMarcha     = false;
 let minutoBTerminado    = false;
 let minutoBNotificada   = false;
 
-// Timers de los pop-ups
-let minutoOroAsignarInterval = null;  // cuenta atrás del pop-up de sorteo
-let minutoOroFinInterval     = null;  // cuenta atrás del pop-up de fin
+let minutoCIntervalo    = null;
+let minutoCRestanteMs   = MINUTO_ORO_MS;
+let minutoCFin          = 0;
+let minutoCEnMarcha     = false;
+let minutoCTerminado    = false;
+let minutoCNotificada   = false;
 
-// ── Montaje  
-// Conecta todos los botones de la sección. Se llama UNA VEZ al arrancar.
+let minutoDIntervalo    = null;
+let minutoDRestanteMs   = MINUTO_ORO_MS;
+let minutoDFin          = 0;
+let minutoDEnMarcha     = false;
+let minutoDTerminado    = false;
+let minutoDNotificada   = false;
+
+let minutoOroAsignarInterval = null;
+let minutoOroFinInterval     = null;
+
 function montarMinutoOro() {
     minutoOroAsignarBtn.addEventListener('click', sortearEquiposMinutoOro);
     minutoAIniciar.addEventListener('click', iniciarMinutoA);
@@ -3015,55 +3034,56 @@ function montarMinutoOro() {
     minutoBIniciar.addEventListener('click', iniciarMinutoB);
     minutoBPausar.addEventListener('click',  pausarMinutoB);
     minutoBReset.addEventListener('click',   resetMinutoB);
-    // Botón "Puntuar equipos": salta a la pestaña de puntuaciones
+    minutoCIniciar.addEventListener('click', iniciarMinutoC);
+    minutoCPausar.addEventListener('click',  pausarMinutoC);
+    minutoCReset.addEventListener('click',   resetMinutoC);
+    minutoDIniciar.addEventListener('click', iniciarMinutoD);
+    minutoDPausar.addEventListener('click',  pausarMinutoD);
+    minutoDReset.addEventListener('click',   resetMinutoD);
     minutoOroPuntuacionesBtn.addEventListener('click', () => irAPuntuar('minuto-oro'));
     $('minuto-oro-volver').addEventListener('click', () => {
         pararMinutoOroSilencioso();
         volverSeleccion();
     });
 }
-// ── Inicialización  
-// Se llama desde cargarPrueba(). Muestra la sección y la deja limpia.
 function inicializarMinutoOro() {
     pararMinutoOroSilencioso();
     minutoOroCronos.classList.add('hidden');
     minutoOroPuntuacionesBtn.classList.add('hidden');
-    minutoOroAsignarDiv.classList.add('hidden');  // ocultar el botón de sorteo clásico
+    minutoOroAsignarEstado.textContent = '';
+    minutoOroAsignarBtn.disabled = false;
+    minutoOroAsignarDiv.classList.remove('hidden');
 
-    // Ocultar estrella B — modo de una sola estrella
-    const bloqueB = $('estrella-b') ? $('estrella-b').closest('.minuto-oro-equipo') : null;
-    if (bloqueB) bloqueB.style.display = 'none';
-
-    // Usar el selector de chips para que salgan todos los equipos
-    ruletaEquiposSelector.classList.remove('hidden');
-    inicializarRuletaSelector(null);
     resetMinutoA();
+    resetMinutoB();
+    resetMinutoC();
+    resetMinutoD();
 }
 
-// ── Sortear equipos  
 function sortearEquiposMinutoOro() {
-    const finalistas = equipos.slice();
+    const clasificados = equipos
+        .slice()
+        .sort((a, b) => totalEquipo(b.id, 'total') - totalEquipo(a.id, 'total'))
+        .slice(0, 4);
 
-    if (finalistas.length < 2) {
+    if (clasificados.length < 4) {
         minutoOroAsignarEstado.textContent =
-            'Necesitas al menos 2 equipos registrados para sortear.';
+            'Necesitas al menos 4 equipos registrados para sortear.';
         return;
     }
 
-    const [t1, t2] = Math.random() < 0.5
-        ? [finalistas[0], finalistas[1]]
-        : [finalistas[1], finalistas[0]];
-
-    minutoOroEquipoA = t1.nombre;
-    minutoOroEquipoB = t2.nombre;
+    const barajados = clasificados.slice().sort(() => Math.random() - 0.5);
+    minutoOroEquipoA = barajados[0].nombre;
+    minutoOroEquipoB = barajados[1].nombre;
+    minutoOroEquipoC = barajados[2].nombre;
+    minutoOroEquipoD = barajados[3].nombre;
 
     minutoOroAsignarBtn.disabled = true;
 
-    // Pop-up compartido: dos líneas con el nombre de cada equipo
     const popupEquipoEl = document.querySelector('.hazme-popup-equipo');
     if (popupEquipoEl) popupEquipoEl.textContent = '¡Equipos del Minuto de Oro!';
     hazmePopupNombre.textContent =
-        `⭐ ${escapar(minutoOroEquipoA)}\n⭐ ${escapar(minutoOroEquipoB)}`;
+        `⭐ ${escapar(minutoOroEquipoA)}\n⭐ ${escapar(minutoOroEquipoB)}\n⭐ ${escapar(minutoOroEquipoC)}\n⭐ ${escapar(minutoOroEquipoD)}`;
     hazmePopupCuenta.textContent = '5';
     hazmePopup.classList.remove('hidden');
 
@@ -3082,7 +3102,6 @@ function sortearEquiposMinutoOro() {
     }, 1000);
 }
 
-// ── Para el pop-up de sorteo silenciosamente 
 function pararAsignarMinutoOroSilencioso() {
     clearInterval(minutoOroAsignarInterval);
     minutoOroAsignarInterval = null;
@@ -3090,18 +3109,18 @@ function pararAsignarMinutoOroSilencioso() {
     if (popupEquipoEl) popupEquipoEl.textContent = '¡Le toca a!';
 }
 
-// ── Mostrar las dos estrellas tras el pop-up ─ 
-// Pone los nombres reales en las estrellas y muestra el bloque.
 function activarCronosMinutoOro() {
     minutoANombre.textContent = minutoOroEquipoA;
     minutoBNombre.textContent = minutoOroEquipoB;
+    minutoCNombre.textContent = minutoOroEquipoC;
+    minutoDNombre.textContent = minutoOroEquipoD;
     minutoOroCronos.classList.remove('hidden');
     resetMinutoA();
     resetMinutoB();
+    resetMinutoC();
+    resetMinutoD();
 }
 
-// ── Pintar displays 
- 
 function pintarMinutoA(ms) {
     const neg = ms < 0;
     const abs = Math.ceil(Math.abs(ms) / 1000);
@@ -3120,9 +3139,9 @@ function pintarMinutoB(ms) {
     minutoBDisplay.classList.toggle('crono-final', ms <= 10000 && ms > 0);
 }
 
-// ── Iniciar / Pausar / Reiniciar — Estrella A  
 function iniciarMinutoA() {
     if (minutoAEnMarcha || minutoATerminado) return;
+    mostrarCronoGigante('minuto-a-display', minutoOroEquipoA || 'Equipo A', 'minuto-a-botones', 'estrella-a');
     minutoAEnMarcha = true;
     minutoAFin = Date.now() + minutoARestanteMs;
     minutoAIniciar.disabled = true;
@@ -3177,18 +3196,18 @@ function terminarMinutoA() {
     minutoATerminado = true;
     pintarMinutoA(0);
     minutoADisplay.classList.remove('crono-final');
-    estrellaA.classList.add('terminada');             // estrella se vuelve verde
+    estrellaA.classList.add('terminada');
     minutoAIniciar.disabled = true;
     minutoAPausar.disabled  = true;
     minutoAEstado.textContent = `¡Tiempo de ${minutoOroEquipoA || 'Equipo A'} agotado!`;
-    minutoOroPuntuacionesBtn.classList.remove('hidden'); // aparece al terminar el primero
+    minutoOroPuntuacionesBtn.classList.remove('hidden');
     bip(660);
     verificarFinMinutoOro();
 }
 
-// ── Iniciar / Pausar / Reiniciar — Estrella B  
 function iniciarMinutoB() {
     if (minutoBEnMarcha || minutoBTerminado) return;
+    mostrarCronoGigante('minuto-b-display', minutoOroEquipoB || 'Equipo B', 'minuto-b-botones', 'estrella-b');
     minutoBEnMarcha = true;
     minutoBFin = Date.now() + minutoBRestanteMs;
     minutoBIniciar.disabled = true;
@@ -3243,33 +3262,179 @@ function terminarMinutoB() {
     minutoBTerminado = true;
     pintarMinutoB(0);
     minutoBDisplay.classList.remove('crono-final');
-    estrellaB.classList.add('terminada');             // estrella se vuelve verde
+    estrellaB.classList.add('terminada');
     minutoBIniciar.disabled = true;
     minutoBPausar.disabled  = true;
     minutoBEstado.textContent = `¡Tiempo de ${minutoOroEquipoB || 'Equipo B'} agotado!`;
-    minutoOroPuntuacionesBtn.classList.remove('hidden'); // aparece al terminar el primero
+    minutoOroPuntuacionesBtn.classList.remove('hidden');
     bip(660);
     verificarFinMinutoOro();
 }
 
-// ── Verificar si los dos timers han terminado 
-// Se llama al terminar cada timer. Si los dos han terminado → pop-up de fin.
+function iniciarMinutoC() {
+    if (minutoCEnMarcha || minutoCTerminado) return;
+    mostrarCronoGigante('minuto-c-display', minutoOroEquipoC || 'Equipo C', 'minuto-c-botones', 'estrella-c');
+    minutoCEnMarcha = true;
+    minutoCFin = Date.now() + minutoCRestanteMs;
+    minutoCIniciar.disabled = true;
+    minutoCPausar.disabled  = false;
+    minutoCEstado.textContent = `¡1 minuto para ${minutoOroEquipoC || 'Equipo C'}!`;
+    minutoCIntervalo = setInterval(() => {
+        minutoCRestanteMs = minutoCFin - Date.now();
+        pintarMinutoC(minutoCRestanteMs);
+        if (minutoCRestanteMs <= 0 && !minutoCNotificada) {
+            minutoCNotificada = true;
+            bip(660);
+            minutoCEstado.textContent = `¡Tiempo de ${minutoOroEquipoC || 'Equipo C'} agotado! El cronómetro sigue en negativo.`;
+            minutoCDisplay.classList.remove('crono-final');
+            estrellaC.classList.add('terminada');
+            minutoOroPuntuacionesBtn.classList.remove('hidden');
+        }
+    }, 200);
+}
+
+function pausarMinutoC() {
+    if (!minutoCEnMarcha) return;
+    clearInterval(minutoCIntervalo);
+    minutoCIntervalo  = null;
+    minutoCEnMarcha   = false;
+    minutoCRestanteMs = minutoCFin - Date.now();
+    minutoCIniciar.disabled = false;
+    minutoCPausar.disabled  = true;
+    minutoCEstado.textContent = 'Pausa — pulsa Iniciar para continuar.';
+}
+
+function pararMinutoCSilencioso() {
+    clearInterval(minutoCIntervalo);
+    minutoCIntervalo = null;
+    minutoCEnMarcha  = false;
+}
+
+function resetMinutoC() {
+    pararMinutoCSilencioso();
+    minutoCRestanteMs = MINUTO_ORO_MS;
+    minutoCTerminado  = false;
+    minutoCNotificada = false;
+    pintarMinutoC(MINUTO_ORO_MS);
+    if (estrellaC) estrellaC.classList.remove('terminada');
+    if (minutoCDisplay) minutoCDisplay.classList.remove('crono-final');
+    if (minutoCIniciar) minutoCIniciar.disabled = false;
+    if (minutoCPausar)  minutoCPausar.disabled  = true;
+    if (minutoCEstado)  minutoCEstado.textContent = 'Listo para empezar.';
+}
+
+function terminarMinutoC() {
+    pararMinutoCSilencioso();
+    minutoCTerminado = true;
+    pintarMinutoC(0);
+    minutoCDisplay.classList.remove('crono-final');
+    estrellaC.classList.add('terminada');
+    minutoCIniciar.disabled = true;
+    minutoCPausar.disabled  = true;
+    minutoCEstado.textContent = `¡Tiempo de ${minutoOroEquipoC || 'Equipo C'} agotado!`;
+    minutoOroPuntuacionesBtn.classList.remove('hidden');
+    bip(660);
+    verificarFinMinutoOro();
+}
+
+function pintarMinutoC(ms) {
+    const neg = ms < 0;
+    const abs = Math.ceil(Math.abs(ms) / 1000);
+    const m = Math.floor(abs / 60).toString().padStart(2, '0');
+    const s = (abs % 60).toString().padStart(2, '0');
+    minutoCDisplay.textContent = `${neg ? '-' : ''}${m}:${s}`;
+    minutoCDisplay.classList.toggle('crono-final', ms <= 10000 && ms > 0);
+}
+
+function iniciarMinutoD() {
+    if (minutoDEnMarcha || minutoDTerminado) return;
+    mostrarCronoGigante('minuto-d-display', minutoOroEquipoD || 'Equipo D', 'minuto-d-botones', 'estrella-d');
+    minutoDEnMarcha = true;
+    minutoDFin = Date.now() + minutoDRestanteMs;
+    minutoDIniciar.disabled = true;
+    minutoDPausar.disabled  = false;
+    minutoDEstado.textContent = `¡1 minuto para ${minutoOroEquipoD || 'Equipo D'}!`;
+    minutoDIntervalo = setInterval(() => {
+        minutoDRestanteMs = minutoDFin - Date.now();
+        pintarMinutoD(minutoDRestanteMs);
+        if (minutoDRestanteMs <= 0 && !minutoDNotificada) {
+            minutoDNotificada = true;
+            bip(660);
+            minutoDEstado.textContent = `¡Tiempo de ${minutoOroEquipoD || 'Equipo D'} agotado! El cronómetro sigue en negativo.`;
+            minutoDDisplay.classList.remove('crono-final');
+            estrellaD.classList.add('terminada');
+            minutoOroPuntuacionesBtn.classList.remove('hidden');
+        }
+    }, 200);
+}
+
+function pausarMinutoD() {
+    if (!minutoDEnMarcha) return;
+    clearInterval(minutoDIntervalo);
+    minutoDIntervalo  = null;
+    minutoDEnMarcha   = false;
+    minutoDRestanteMs = minutoDFin - Date.now();
+    minutoDIniciar.disabled = false;
+    minutoDPausar.disabled  = true;
+    minutoDEstado.textContent = 'Pausa — pulsa Iniciar para continuar.';
+}
+
+function pararMinutoDSilencioso() {
+    clearInterval(minutoDIntervalo);
+    minutoDIntervalo = null;
+    minutoDEnMarcha  = false;
+}
+
+function resetMinutoD() {
+    pararMinutoDSilencioso();
+    minutoDRestanteMs = MINUTO_ORO_MS;
+    minutoDTerminado  = false;
+    minutoDNotificada = false;
+    pintarMinutoD(MINUTO_ORO_MS);
+    if (estrellaD) estrellaD.classList.remove('terminada');
+    if (minutoDDisplay) minutoDDisplay.classList.remove('crono-final');
+    if (minutoDIniciar) minutoDIniciar.disabled = false;
+    if (minutoDPausar)  minutoDPausar.disabled  = true;
+    if (minutoDEstado)  minutoDEstado.textContent = 'Listo para empezar.';
+}
+
+function terminarMinutoD() {
+    pararMinutoDSilencioso();
+    minutoDTerminado = true;
+    pintarMinutoD(0);
+    minutoDDisplay.classList.remove('crono-final');
+    estrellaD.classList.add('terminada');
+    minutoDIniciar.disabled = true;
+    minutoDPausar.disabled  = true;
+    minutoDEstado.textContent = `¡Tiempo de ${minutoOroEquipoD || 'Equipo D'} agotado!`;
+    minutoOroPuntuacionesBtn.classList.remove('hidden');
+    bip(660);
+    verificarFinMinutoOro();
+}
+
+function pintarMinutoD(ms) {
+    const neg = ms < 0;
+    const abs = Math.ceil(Math.abs(ms) / 1000);
+    const m = Math.floor(abs / 60).toString().padStart(2, '0');
+    const s = (abs % 60).toString().padStart(2, '0');
+    minutoDDisplay.textContent = `${neg ? '-' : ''}${m}:${s}`;
+    minutoDDisplay.classList.toggle('crono-final', ms <= 10000 && ms > 0);
+}
+
 function verificarFinMinutoOro() {
-    if (minutoATerminado && minutoBTerminado) {
+    if (minutoATerminado && minutoBTerminado && minutoCTerminado && minutoDTerminado) {
         terminarMinutoOro();
     }
 }
 
-// ── Pop-up de fin del Minuto de Oro  
-// Aparece cuando los DOS cronómetros han llegado a 0.
 function terminarMinutoOro() {
     bip(660);
-    setTimeout(() => bip(660), 350);  // doble bip de fin
+    setTimeout(() => bip(660), 350);
 
     const popupEquipoEl = document.querySelector('.hazme-popup-equipo');
     if (popupEquipoEl) popupEquipoEl.textContent = '¡Minuto de Oro completado!';
     hazmePopupNombre.textContent =
-        `${escapar(minutoOroEquipoA)} ⭐\n${escapar(minutoOroEquipoB)} ⭐`;
+        `${escapar(minutoOroEquipoA)} ⭐\n${escapar(minutoOroEquipoB)} ⭐\n${escapar(minutoOroEquipoC)} ⭐\n${escapar(minutoOroEquipoD)} ⭐`;
     hazmePopupCuenta.textContent = '✓';
     hazmePopup.classList.remove('hidden');
 
@@ -3288,12 +3453,11 @@ function terminarMinutoOro() {
     }, 1000);
 }
 
-// ── Para silenciosamente todos los timers del Minuto de Oro ──────
-// Cancela los cuatro timers posibles (A, B, sorteo, fin) sin tocar UI.
-// Lo llaman ocultarSeccionesSorteo() y volverSeleccion().
 function pararMinutoOroSilencioso() {
     pararMinutoASilencioso();
     pararMinutoBSilencioso();
+    pararMinutoCSilencioso();
+    pararMinutoDSilencioso();
     pararAsignarMinutoOroSilencioso();
     clearInterval(minutoOroFinInterval);
     minutoOroFinInterval = null;
@@ -3306,22 +3470,19 @@ function pararMinutoOroSilencioso() {
 function montarPuntuacion() {
 
 
-    // ── Formulario de añadir equipo 
-
     $('form-equipo').addEventListener('submit', async e => {
         e.preventDefault();
         const nombre  = $('equipo-nombre').value.trim();
-        // Alumnos: recoge los 4 inputs y descarta los vacíos (el 4 es opcional)
+        const sala    = $('equipo-sala').value.trim();
         const alumnos = [...document.querySelectorAll('.alumno-input')]
             .map(i => i.value.trim())
             .filter(a => a);
 
-        // Validación: colegio obligatorio
         if (!nombre || alumnos.length < 3) {
             alert('Elige un colegio y rellena al menos los 3 primeros alumnos.');
             return;
         }
-        const nuevoEquipo = { id: 'eq_' + Date.now(), nombre, alumnos };
+        const nuevoEquipo = { id: 'eq_' + Date.now(), nombre, sala, alumnos };
         try {
             const resp = await fetch('/api/equipos', {
                 method: 'POST',
@@ -3337,21 +3498,27 @@ function montarPuntuacion() {
         }
         renderEquipos();
         refrescarSelectoresEquipos();
-        // Limpiamos el formulario para el siguiente equipo
         e.target.reset();
     });
 
-    $('punt-equipo').addEventListener('change', actualizarSelectorAlumnos);
+    const _resetForm = () => {
+        limpiarRubrica();
+        $('punt-aviso').value = '';
+        actualizarVistaPorAviso('', $('punt-prueba').value);
+    };
+
+    $('punt-sala').addEventListener('change',   _resetForm);
+    $('punt-equipo').addEventListener('change', () => { _resetForm(); actualizarSelectorAlumnos(); });
+    $('punt-alumno').addEventListener('change', _resetForm);
     $('guardar-puntuacion').addEventListener('click', guardarPuntuacion);
 
-    // Al cambiar la prueba, regenerar la rúbrica con sus criterios específicos
     $('punt-prueba').addEventListener('change', () => {
         limpiarRubrica();
+        $('punt-aviso').value = '';
         renderRubrica($('punt-prueba').value);
-        actualizarVistaPorAviso($('punt-aviso').value, $('punt-prueba').value);
+        actualizarVistaPorAviso('', $('punt-prueba').value);
     });
 
-    // Al cambiar el aviso, mostrar u ocultar la rúbrica según la penalización
     $('punt-aviso').addEventListener('change', () => {
         actualizarVistaPorAviso($('punt-aviso').value, $('punt-prueba').value);
     });
@@ -3380,7 +3547,16 @@ function poblarColegiosFijos() {
 }
 
 
+function actualizarContadoresSala() {
+    const salas = { 'Auditorio': 0, 'Ludoteca': 0, 'Poli 2': 0 };
+    equipos.forEach(eq => { if (salas[eq.sala] !== undefined) salas[eq.sala]++; });
+    $('num-auditorio').textContent = salas['Auditorio'];
+    $('num-ludoteca').textContent  = salas['Ludoteca'];
+    $('num-poli2').textContent     = salas['Poli 2'];
+}
+
 function renderEquipos() {
+    actualizarContadoresSala();
     const cont = $('equipos-lista');
     if (equipos.length === 0) {
         cont.innerHTML = '<p class="ayuda">No hay equipos registrados todavía.</p>';
@@ -3391,7 +3567,7 @@ function renderEquipos() {
         return `
             <div class="equipo-card">
                 <div class="equipo-info">
-                    <h4>${escapar(eq.nombre)}</h4>
+                    <h4>${escapar(eq.nombre)}${eq.sala ? ` <span class="equipo-sala-tag">${escapar(eq.sala)}</span>` : ''}</h4>
                     <div class="equipo-alumnos">${eq.alumnos.map(escapar).join(' · ')}</div>
                 </div>
                 <div class="equipo-puntos">${total} pts</div>
@@ -3447,7 +3623,6 @@ function actualizarSelectorAlumnos() {
         eq.alumnos.map((a, i) => `<option value="${i}">${escapar(a)}</option>`).join('') +
         '<option value="otro">Otro</option>';
 
-    // Mostrar/ocultar campo de texto según selección
     sel.onchange = () => {
         otroInput.style.display = sel.value === 'otro' ? 'block' : 'none';
         if (sel.value !== 'otro') otroInput.value = '';
@@ -3455,8 +3630,6 @@ function actualizarSelectorAlumnos() {
     otroInput.style.display = 'none';
 }
 
-// Genera la rúbrica para la prueba indicada.
-// Sin prueba → mensaje de ayuda. Con prueba → criterios específicos + total dinámico.
 function renderRubrica(prueba) {
     const cont     = $('rubrica');
     const maxEl    = $('punt-max');
@@ -3539,22 +3712,17 @@ function limpiarRubrica() {
     actualizarTotal();
 }
 
-// Ajusta la vista del formulario según el tipo de penalización seleccionada.
-// Falta leve: oculta la rúbrica y muestra -1 como total (no se puntúa).
-// Aviso o ninguno: muestra la rúbrica normalmente.
 function actualizarVistaPorAviso(aviso, prueba) {
     const rubricaEl = $('rubrica');
     const totalEl   = $('punt-total');
     const maxEl     = $('punt-max');
     if (aviso === 'falta-leve') {
-        // Rúbrica activa; el total se recalcula como (suma criterios − 1)
         rubricaEl.style.opacity        = '';
         rubricaEl.style.pointerEvents  = '';
         totalEl.style.color            = '#e53935';
         if (maxEl) maxEl.style.visibility = '';
         actualizarTotal(prueba);
     } else if (aviso === 'falta-grave') {
-        // Rúbrica desactivada; se muestra --- como indicador
         rubricaEl.style.opacity        = '0.25';
         rubricaEl.style.pointerEvents  = 'none';
         totalEl.textContent            = '---';
@@ -3580,7 +3748,6 @@ async function guardarPuntuacion() {
         return;
     }
 
-    // Si eligieron "Otro", usamos el texto del campo libre
     let alumnoIdx;
     let alumnoNombreOtro = null;
     if (alumnoVal === 'otro') {
@@ -3589,7 +3756,7 @@ async function guardarPuntuacion() {
             alert('Escribe el nombre del alumno en el campo de texto.');
             return;
         }
-        alumnoIdx = -1; // índice especial para "otro"
+        alumnoIdx = -1;
     } else {
         alumnoIdx = parseInt(alumnoVal, 10);
     }
@@ -3614,6 +3781,7 @@ async function guardarPuntuacion() {
         alumnoNombreOtro,
         prueba,
         sala,
+        ronda: $('punt-ronda').value || null,
         criterios: { ...rubricaActual },
         total,
         aviso,
@@ -3642,11 +3810,9 @@ async function guardarPuntuacion() {
             : `Puntuación guardada: ${total} puntos.`;
     alert(msgGuardado);
     $('punt-aviso').value = '';
-    limpiarRubrica();
     actualizarVistaPorAviso('', prueba);
 }
 
-// Salto rápido desde la sección de ruleta al formulario de puntuación.
 function irAPuntuar(prueba) {
     document.querySelector('.tab[data-modo="puntuacion"]').click();
     if (prueba) {
@@ -3654,6 +3820,11 @@ function irAPuntuar(prueba) {
         limpiarRubrica();
         renderRubrica(prueba);
     }
+    if (salaSorteoActual) {
+        const salaIdx = SALAS_ORDEN.indexOf(salaSorteoActual) + 1;
+        if (salaIdx > 0) $('punt-sala').value = String(salaIdx);
+    }
+    sincronizarRondaEnPuntuacion();
 }
 
 
@@ -3689,7 +3860,6 @@ async function mostrarQrColegio(eq) {
         return;
     }
 
-    // Obtener la URL base del servidor (local o público)
     let url;
     try {
         const resp = await fetch('/api/mi-ip');
@@ -3700,16 +3870,13 @@ async function mostrarQrColegio(eq) {
         url = `${window.location.origin}/resultados/${encodeURIComponent(eq.id)}`;
     }
 
-    // ── Mostrar modal ──
     $('qr-modal-titulo').textContent    = eq.nombre;
     $('qr-modal-subtitulo').textContent = `Total general: ${totalEquipo(eq.id, 'total')} pts`;
     $('qr-modal').classList.remove('hidden');
 
-    // ── Generar QR en el canvas ──
     const canvas = $('qr-canvas');
     QRCode.toCanvas(canvas, url, { width: 320, margin: 2, color: { dark: '#0D2B55', light: '#FFFFFF' } });
 
-    // ── Botón descargar ──
     $('qr-descargar-btn').onclick = () => {
         const a  = document.createElement('a');
         a.href   = canvas.toDataURL('image/png');
@@ -3717,7 +3884,6 @@ async function mostrarQrColegio(eq) {
         a.click();
     };
 
-    // ── Cerrar ──
     $('qr-cerrar-btn').onclick = () => $('qr-modal').classList.add('hidden');
     $('qr-modal').onclick      = e => { if (e.target === $('qr-modal')) $('qr-modal').classList.add('hidden'); };
 }
@@ -3728,8 +3894,8 @@ function poblarSelectDescarga() {
     const opciones = equipos.map(e => `<option value="${e.id}">${escapar(e.nombre)}</option>`).join('');
     sel.innerHTML = '<option value="">— Elige un colegio —</option>' + opciones;
     $('descargar-csv-btn').disabled = true;
+    $('ver-qr-btn').disabled        = true;
 }
-// Suma de puntos de un equipo, filtrando por fase si procede.
 function totalEquipo(equipoId, fase = 'total') {
     return puntuaciones
         .filter(p => p.equipoId === equipoId)
@@ -3823,7 +3989,6 @@ async function descargarClasificacionCSV(eq) {
         { width: 10 }, { width: 14 },
     ];
 
-    // ── Logo desde caché precargado al inicio ──
     let logoId = null;
     try {
         if (logoBase64Cache) {
@@ -3834,7 +3999,6 @@ async function descargarClasificacionCSV(eq) {
         }
     } catch { logoId = null; }
 
-    // ── Cabecera ──
     ws.mergeCells('A1:A3');
     const logoCell = ws.getCell('A1');
     logoCell.fill   = { type:'pattern', pattern:'solid', fgColor: WHITE };
@@ -3873,7 +4037,6 @@ async function descargarClasificacionCSV(eq) {
 
     ws.addRow([]).height = 8;
 
-    // ── Secciones por prueba ──
     PRUEBAS.forEach(pr => {
         const registros = puntsEq.filter(p => p.prueba === pr.id);
         if (!registros.length) return;
@@ -3906,7 +4069,8 @@ async function descargarClasificacionCSV(eq) {
             while (criPts.length < 5) criPts.push('');
 
             const bg    = idx % 2 === 1 ? ALTBG : WHITE;
-            const rData = ws.addRow([alumno, ...criPts, p.total, p.aviso || '—']);
+            const totalExcel = p.aviso === 'falta-leve' ? `${p.total + 1} - 1 = ${p.total}` : p.total;
+            const rData = ws.addRow([alumno, ...criPts, totalExcel, p.aviso || '—']);
             rData.eachCell(cell => {
                 cell.fill      = { type:'pattern', pattern:'solid', fgColor: bg };
                 cell.font      = { size: 9, name: 'Arial' };
@@ -3920,7 +4084,6 @@ async function descargarClasificacionCSV(eq) {
         ws.addRow([]).height = 6;
     });
 
-    // ── Totales ──
     ws.addRow([]).height = 6;
     [
         { label: 'Total Clasificación', pts: totalClasif, dark: false },
@@ -3940,7 +4103,6 @@ async function descargarClasificacionCSV(eq) {
         r.height = 22;
     });
 
-    // ── Descargar ──
     const buffer   = await wb.xlsx.writeBuffer();
     const blob     = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url      = URL.createObjectURL(blob);
@@ -3951,131 +4113,6 @@ async function descargarClasificacionCSV(eq) {
     URL.revokeObjectURL(url);
 }
 
-async function descargarClasificacionCSV_OLD(eq) {
-    const PRUEBAS = [
-        { id: 'hazme-fan',              label: 'Prueba 1 — Hazme Fan' },
-        { id: 'fabrica-historias',      label: 'Prueba 2 — Fábrica de Historias' },
-        { id: 'voces-derecho',          label: 'Prueba 3 — Voces con Derecho' },
-        { id: 'duelo-personajes',       label: 'Prueba 4 — Duelo de Personajes' },
-        { id: 'declamacion',            label: 'Final 1 — Declamación' },
-        { id: 'palabra-caliente',       label: 'Final 2 — Palabra Caliente' },
-        { id: 'duelo-personajes-final', label: 'Final 3 — Duelo Final' },
-        { id: 'minuto-oro',             label: 'Final 4 — Minuto de Oro' },
-    ];
-
-    let filas = '';
-
-    // ── URL del logo via URL base del servidor ──
-    let logoUrl = '';
-    try {
-        const resp = await fetch('/api/mi-ip');
-        if (!resp.ok) throw new Error();
-        const { baseUrl } = await resp.json();
-        logoUrl = `${baseUrl}/img/logo.png`;
-    } catch { logoUrl = ''; }
-
-    // ── Cabecera: fondo blanco · logo izquierda en recuadro azul · texto derecha ──
-    const logoCelda = logoUrl
-        ? `<img src="${logoUrl}" width="72" height="72" style="background:white;border-radius:4px;padding:4px;display:block;margin:0 auto;">`
-        : '';
-
-    filas += `<tr>
-        <td rowspan="3" width="100" style="background:#ffffff;padding:12px;text-align:center;vertical-align:middle;border:3px solid #1A6FC4;">
-            ${logoCelda}
-        </td>
-        <td colspan="7" style="background:#fff;color:#0D2B55;font-weight:bold;font-size:22pt;font-family:Arial;padding:16px 22px 4px;vertical-align:bottom;border-top:2px solid #1A6FC4;border-right:2px solid #1A6FC4;">
-            ${eq.nombre}
-        </td>
-    </tr>
-    <tr>
-        <td colspan="7" style="background:#fff;color:#1A6FC4;font-size:11pt;font-family:Arial;padding:2px 22px;vertical-align:middle;border-right:2px solid #1A6FC4;">
-            II Torneo de Oratoria de Chamberí
-        </td>
-    </tr>
-    <tr>
-        <td colspan="7" style="background:#fff;color:#888;font-size:9pt;font-family:Arial;padding:4px 22px 14px;vertical-align:top;border-bottom:2px solid #1A6FC4;border-right:2px solid #1A6FC4;">
-            Resultados del equipo · ${new Date().toLocaleDateString('es-ES')}
-        </td>
-    </tr>`;
-    filas += `<tr><td colspan="8" style="border:none;height:14px;background:#f4f7fb;"></td></tr>`;
-
-    // ── Pruebas ──
-    PRUEBAS.forEach(pr => {
-        const registros = puntuaciones.filter(p => p.equipoId === eq.id && p.prueba === pr.id);
-        if (!registros.length) return;
-
-        const criterios  = getCriteriosPrueba(pr.id);
-        const criNombres = criterios.map(c => c.nombre);
-        while (criNombres.length < 5) criNombres.push('');
-
-        // Cabecera de prueba
-        filas += `<tr><td colspan="8" style="background:#1A6FC4;color:#fff;font-weight:bold;font-size:11pt;padding:7px 12px;">
-                    ${pr.label}</td></tr>`;
-
-        // Cabecera de columnas
-        filas += `<tr>
-            <td style="background:#3A9BD5;color:#fff;font-weight:bold;text-align:left;">Alumno</td>
-            ${criNombres.map(n => `<td style="background:#3A9BD5;color:#fff;font-weight:bold;text-align:center;">${n}</td>`).join('')}
-            <td style="background:#3A9BD5;color:#fff;font-weight:bold;text-align:center;">Total</td>
-            <td style="background:#3A9BD5;color:#fff;font-weight:bold;text-align:center;">Aviso</td>
-        </tr>`;
-
-        // Filas de datos
-        registros.forEach((p, idx) => {
-            const bg     = idx % 2 === 1 ? '#EDF5FF' : '#FFFFFF';
-            const alumno = p.alumnoNombreOtro || (eq.alumnos && eq.alumnos[p.alumnoIdx]) || `Alumno ${p.alumnoIdx + 1}`;
-            const criPts = criterios.map(c => (p.criterios && p.criterios[c.id] != null) ? p.criterios[c.id] : '');
-            while (criPts.length < 5) criPts.push('');
-
-            filas += `<tr>
-                <td style="background:${bg};text-align:left;">${alumno}</td>
-                ${criPts.map(v => `<td style="background:${bg};text-align:center;">${v}</td>`).join('')}
-                <td style="background:${bg};text-align:center;font-weight:bold;">${p.total}</td>
-                <td style="background:${bg};text-align:center;">${p.aviso || '—'}</td>
-            </tr>`;
-        });
-
-        filas += `<tr><td colspan="8" style="border:none;height:8px;"></td></tr>`;
-    });
-
-    // ── Totales ──
-    filas += `<tr><td colspan="8" style="border:none;height:8px;"></td></tr>`;
-    [
-        { label: 'Total Clasificación', pts: totalEquipo(eq.id, 'clasificacion'), dark: false },
-        { label: 'Total Final',         pts: totalEquipo(eq.id, 'final'),         dark: false },
-        { label: 'TOTAL GENERAL',       pts: totalEquipo(eq.id, 'total'),         dark: true  },
-    ].forEach(({ label, pts, dark }) => {
-        const bg  = dark ? '#0D2B55' : '#D6EAF8';
-        const col = dark ? '#FFFFFF' : '#0D2B55';
-        const sz  = dark ? '11pt' : '10pt';
-        filas += `<tr>
-            <td style="background:${bg};color:${col};font-weight:bold;font-size:${sz};text-align:left;">${label}</td>
-            <td colspan="5" style="background:${bg};"></td>
-            <td style="background:${bg};color:${col};font-weight:bold;font-size:${sz};text-align:center;">${pts}</td>
-            <td style="background:${bg};"></td>
-        </tr>`;
-    });
-
-    // ── Generar fichero ──
-    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
-        xmlns:x="urn:schemas-microsoft-com:office:excel"
-        xmlns="http://www.w3.org/TR/REC-html40">
-    <head><meta charset="UTF-8">
-    <style>
-        body  { font-family: Arial, sans-serif; font-size: 10pt; }
-        table { border-collapse: collapse; }
-        td    { border: 1px solid #B0C4D8; padding: 5px 9px; }
-    </style></head>
-    <body><table>${filas}</table></body></html>`;
-
-    const blob = new Blob(['﻿' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `${eq.nombre.replace(/[^\wáéíóúñÁÉÍÓÚÑ\s]/g, '_')}_oratoria.xls`;
-    a.click();
-    URL.revokeObjectURL(url);
-}
 
 
 
@@ -4109,13 +4146,17 @@ function renderDetalleRanking() {
         const avisoHtml = p.aviso
             ? `<span style="background:${AVISO_COLORES[p.aviso]};color:#fff;padding:2px 8px;border-radius:99px;font-size:.78rem;font-weight:600;">${AVISO_LABELS[p.aviso]}</span>`
             : '—';
+        const rondaLabel = p.ronda ? `R${p.ronda}` : '—';
         return `
             <div class="detalle-fila" data-id="${p.id}">
                 <div class="detalle-celda detalle-equipo-nombre">${nombre}</div>
                 <div class="detalle-celda">${alumno}</div>
                 <div class="detalle-celda">${salaLabel}</div>
                 <div class="detalle-celda">${escapar(p.prueba)}</div>
-                <div class="detalle-celda detalle-pts" style="${p.aviso === 'falta-leve' || p.aviso === 'falta-grave' ? 'color:#e53935;font-weight:700;' : ''}">${p.aviso === 'falta-grave' ? '---' : p.total + ' pts'}</div>
+                <div class="detalle-celda">${rondaLabel}</div>
+                <div class="detalle-celda detalle-pts" style="${p.aviso === 'falta-leve' || p.aviso === 'falta-grave' ? 'color:#e53935;font-weight:700;' : ''}">
+                    ${p.aviso === 'falta-grave' ? '---' : p.aviso === 'falta-leve' ? `${p.total + 1} - 1 = ${p.total} pts` : p.total + ' pts'}
+                </div>
                 <div class="detalle-celda">${avisoHtml}</div>
                 <div class="detalle-celda">
                     <button class="btn-borrar-punt" data-id="${p.id}" title="Borrar este registro" style="background:none;border:none;cursor:pointer;color:#e53935;font-size:1.1rem;">🗑</button>
@@ -4129,13 +4170,13 @@ function renderDetalleRanking() {
             <div class="detalle-celda">Alumno</div>
             <div class="detalle-celda">Sala</div>
             <div class="detalle-celda">Prueba</div>
+            <div class="detalle-celda">Ronda</div>
             <div class="detalle-celda">Puntos</div>
             <div class="detalle-celda">Aviso</div>
             <div class="detalle-celda"></div>
         </div>
         ${filas}`;
 
-    // Conectar botones de borrar
     cont.querySelectorAll('.btn-borrar-punt').forEach(btn => {
         btn.addEventListener('click', () => borrarPuntuacion(btn.dataset.id));
     });
@@ -4161,7 +4202,6 @@ async function borrarPuntuacion(id) {
 
 /*  16) UTILIDADES- */
 
-// Escapa HTML para evitar inyección al pintar nombres de equipos/alumnos.
 function escapar(s) {
     return String(s ?? '')
         .replace(/&/g, '&amp;')
@@ -4169,4 +4209,62 @@ function escapar(s) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+let _giganteInterval          = null;
+let _giganteSourceEl          = null;
+let _giganteBotonesEl         = null;
+let _giganteBotonesParent     = null;
+let _giganteEstrellaSourceEl  = null;
+
+function mostrarCronoGigante(sourceId, label, botonesId, estrellaId) {
+    clearInterval(_giganteInterval);
+    if (_giganteBotonesEl && _giganteBotonesParent) {
+        _giganteBotonesParent.appendChild(_giganteBotonesEl);
+    }
+    _giganteSourceEl         = $(sourceId);
+    _giganteEstrellaSourceEl = estrellaId ? $(estrellaId) : null;
+    const popup     = $('crono-gigante');
+    const disp      = $('crono-gigante-display');
+    const lbl       = $('crono-gigante-label');
+    const slot      = $('crono-gigante-botones');
+    const estrellaEl = $('crono-gigante-estrella');
+    lbl.textContent = label || '';
+    if (_giganteSourceEl) disp.textContent = _giganteSourceEl.textContent;
+    if (_giganteEstrellaSourceEl) {
+        popup.classList.add('modo-estrella');
+        estrellaEl.classList.toggle('terminada', _giganteEstrellaSourceEl.classList.contains('terminada'));
+    } else {
+        popup.classList.remove('modo-estrella');
+    }
+    _giganteBotonesEl = botonesId ? $(botonesId) : null;
+    if (_giganteBotonesEl) {
+        _giganteBotonesParent = _giganteBotonesEl.parentNode;
+        slot.appendChild(_giganteBotonesEl);
+    }
+    popup.classList.remove('hidden');
+    _giganteInterval = setInterval(() => {
+        if (!_giganteSourceEl) return;
+        disp.textContent = _giganteSourceEl.textContent;
+        disp.classList.toggle('crono-final',  _giganteSourceEl.classList.contains('crono-final'));
+        disp.classList.toggle('crono-minimo', _giganteSourceEl.classList.contains('crono-minimo'));
+        if (_giganteEstrellaSourceEl) {
+            estrellaEl.classList.toggle('terminada', _giganteEstrellaSourceEl.classList.contains('terminada'));
+        }
+    }, 100);
+}
+
+function ocultarCronoGigante() {
+    clearInterval(_giganteInterval);
+    _giganteInterval         = null;
+    _giganteSourceEl         = null;
+    _giganteEstrellaSourceEl = null;
+    if (_giganteBotonesEl && _giganteBotonesParent) {
+        _giganteBotonesParent.appendChild(_giganteBotonesEl);
+    }
+    _giganteBotonesEl     = null;
+    _giganteBotonesParent = null;
+    const popup = $('crono-gigante');
+    popup.classList.remove('modo-estrella');
+    popup.classList.add('hidden');
 }

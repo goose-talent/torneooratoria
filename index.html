@@ -18,8 +18,8 @@
             <img src="img/logo.png" alt="logo de la empresa" class="logo logo-empresa">
             <h1>II Concurso de Oratoria Escolar</h1>
             <div class="info-evento">
-                <span class="chip">Fase de Clasificación</span>
-                <span class="chip-fecha">28 de mayo · 9:00 — 14:00</span>
+                <span class="chip"> Fase clasificacion</span>
+                <span class="chip-fecha"> 28 de mayo 09:00-14:00</span>
                 <span class="chip-lugar">Centro Cultural Galileo</span>
             </div>
         </div>
@@ -38,6 +38,41 @@
         <section id="modo-sorteos" class="modo activo">
             <div class="contenedor-principal">
                 <div class="seccion-ruleta">
+
+                    <!-- Configuración de sesión de clasificación -->
+                    <section id="sesion-clasificacion" class="tarjeta sesion-clasificacion-card">
+                        <h2>Sesión activa</h2>
+                        <div class="sorteo-filtros">
+                            <div class="campo">
+                                <label for="sorteo-sala-select">Sala</label>
+                                <select id="sorteo-sala-select">
+                                    <option value="">— Sala —</option>
+                                    <option value="Auditorio">Auditorio</option>
+                                    <option value="Ludoteca">Ludoteca</option>
+                                    <option value="Poli 2">Poli 2</option>
+                                </select>
+                            </div>
+                            <div class="campo">
+                                <label for="sorteo-turno-select">Turno</label>
+                                <select id="sorteo-turno-select">
+                                    <option value="">— Turno —</option>
+                                    <option value="1">Turno 1</option>
+                                    <option value="2">Turno 2</option>
+                                    <option value="3">Turno 3</option>
+                                </select>
+                            </div>
+                            <div class="campo">
+                                <label for="sorteo-ronda-select">Ronda</label>
+                                <select id="sorteo-ronda-select">
+                                    <option value="">— Ronda —</option>
+                                    <option value="1">Ronda 1</option>
+                                    <option value="2">Ronda 2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p id="sesion-equipos-info" class="sesion-equipos-info"></p>
+                    </section>
+
                     <section id="seleccion-prueba" class="tarjeta">
                         <h2>1. Elige la prueba</h2>
                         <select id="prueba-select">
@@ -58,43 +93,74 @@
                         <button id="cargar-prueba" class="btn btn-primario">Cargar prueba</button>
                     </section>
 
-                    <!-- Selector de sala y ronda (fase de clasificación) -->
-                    <section id="sala-ronda-selector" class="tarjeta hidden">
-                        <h2>2. Elige sala y ronda</h2>
-                        <div class="form-puntuar">
-                            <div class="campo">
-                                <label for="sorteo-sala-select">Sala</label>
-                                <select id="sorteo-sala-select">
-                                    <option value="">— Elige una sala —</option>
-                                    <option value="Auditorio">Auditorio</option>
-                                    <option value="Ludoteca">Ludoteca</option>
-                                    <option value="Poli 2">Poli 2</option>
-                                </select>
-                            </div>
-                            <div class="campo">
-                                <label for="sorteo-ronda-select">Ronda</label>
-                                <select id="sorteo-ronda-select">
-                                    <option value="">— Elige una ronda —</option>
-                                    <option value="1">Ronda 1</option>
-                                    <option value="2">Ronda 2</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button id="sala-ronda-confirmar" class="btn btn-primario">Confirmar</button>
-                    </section>
-
                     <section id="info-prueba" class="tarjeta hidden">
                         <h2 id="info-titulo"></h2>
                         <p id="info-descripcion"></p>
                     </section>
 
-                    <!-- Selector de orden de equipos para pruebas(GENERICO) -->
+                    <div id="btn-acceder-prueba-wrapper" class="hidden" style="margin-top:.75rem;">
+                        <button id="btn-acceder-prueba" class="btn btn-primario">Acceder a la prueba →</button>
+                    </div>
+
+                    <!-- Selector de orden de equipos para pruebas -->
                     <div id="ruleta-equipos-selector" class="hazme-equipos-selector hidden">
                         <h3>Orden de participación</h3>
                         <div id="ruleta-equipos-grid" class="hazme-equipos-grid"></div>
                         <button id="ruleta-seleccionar-btn" class="btn btn-primario" disabled>Seleccionar equipo</button>
                         <p id="ruleta-selector-estado" class="hazme-selector-estado"></p>
                     </div>
+
+                    <div id="prueba-contenido">
+
+                    <!-- EMPAREJAMIENTO FASE FINAL (Palabra Caliente y Duelo Final) -->
+                    <div id="final-emparejamiento-panel" class="tarjeta hidden">
+                        <h2>Sorteo de enfrentamientos y oradores</h2>
+                        <p class="ayuda" id="final-emparejar-desc">Pulsa el botón para sortear los grupos y sus oradores.</p>
+                        <button id="final-emparejar-btn" class="btn btn-primario">Sortear</button>
+                        <div id="final-emparejamiento-resultado" class="emp-resultado hidden">
+                            <div class="emp-bloque">
+                                <div class="emp-titulo" id="final-enf1-titulo">Pareja 1</div>
+                                <div class="emp-equipo">
+                                    <span id="f1-eq1-nombre" class="emp-nombre"></span>
+                                    <span id="f1-eq1-orador" class="emp-orador"></span>
+                                </div>
+                                <div class="emp-sep">vs</div>
+                                <div class="emp-equipo">
+                                    <span id="f1-eq2-nombre" class="emp-nombre"></span>
+                                    <span id="f1-eq2-orador" class="emp-orador"></span>
+                                </div>
+                            </div>
+                            <div class="emp-bloque" id="final-enf2-bloque">
+                                <div class="emp-titulo" id="final-enf2-titulo">Pareja 2</div>
+                                <div class="emp-equipo">
+                                    <span id="f3-eq1-nombre" class="emp-nombre"></span>
+                                    <span id="f3-eq1-orador" class="emp-orador"></span>
+                                </div>
+                                <div class="emp-sep" id="final-enf2-sep">vs</div>
+                                <div class="emp-equipo">
+                                    <span id="f3-eq2-nombre" class="emp-nombre"></span>
+                                    <span id="f3-eq2-orador" class="emp-orador"></span>
+                                </div>
+                            </div>
+                            <div class="emp-bloque" id="final-mesa-bloque">
+                                <div class="emp-titulo">Duelo 3</div>
+                                <div class="emp-equipo">
+                                    <span id="f4-eq1-nombre" class="emp-nombre"></span>
+                                    <span id="f4-eq1-orador" class="emp-orador"></span>
+                                </div>
+                                <div class="emp-sep">vs</div>
+                                <div class="emp-equipo">
+                                    <span id="f4-eq2-nombre" class="emp-nombre"></span>
+                                    <span id="f4-eq2-orador" class="emp-orador"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="final-sorteo-acciones" class="emp-acciones hidden">
+                            <button id="final-emparejar-btn-repetir" class="btn btn-fantasma">Volver a sortear</button>
+                            <button id="final-confirmar-emparejamiento" class="btn btn-primario">Confirmar y continuar</button>
+                        </div>
+                    </div>
+
 <!-- HAZME FAN -->
                     <!-- Cronómetro - instrucciones -->
                     <section id="hazme-fan-section" class="tarjeta hidden">
@@ -126,7 +192,7 @@
                                 <span class="marca marca-min">mín. 1:30</span>
                                 <span class="marca marca-max">máx. 2:00</span>
                             </div>
-                            <div class="cronometro-botones">
+                            <div id="hazme-botones" class="cronometro-botones">
                                 <button id="crono-iniciar" class="btn btn-primario">Iniciar</button>
                                 <button id="crono-pausar" class="btn btn-secundario" disabled>Pausar</button>
                                 <button id="crono-reset" class="btn btn-fantasma">Reiniciar</button>
@@ -144,21 +210,21 @@
                         <h2>Final 4 — El Minuto de Oro</h2>
                         <p class="ayuda">Cada equipo finalista tiene <strong>1 minuto</strong> para su mejor discurso.</p>
 
-                        <!-- Primero sorteo aleatorio de los dos equipos finalistas -->
+                        <!-- Primero sorteo aleatorio de los cuatro equipos finalistas -->
                         <div id="minuto-oro-asignar" class="minuto-oro-asignar">
-                            <p class="ayuda">Pulsa para asignar aleatoriamente los equipos finalistas a cada estrella.</p>
+                            <p class="ayuda">Pulsa para asignar aleatoriamente los 4 equipos finalistas a cada estrella.</p>
                             <button id="minuto-oro-asignar-btn" class="btn btn-primario">Sortear equipos</button>
                             <p id="minuto-oro-asignar-estado" class="hazme-selector-estado"></p>
                         </div>
 
-                        <!--  Segundo dos cronómetros , uno por cada equipo clasificado. -->
+                        <!-- Cuatro cronómetros, uno por cada equipo clasificado. -->
                         <div id="minuto-oro-cronos" class="minuto-oro-cronos hidden">
                             <div class="minuto-oro-equipo">
                                 <div class="estrella-wrapper" id="estrella-a">
                                     <span id="minuto-a-display" class="minuto-oro-display">01:00</span>
                                 </div>
                                 <div id="minuto-a-nombre" class="minuto-oro-nombre">Equipo A</div>
-                                <div class="cronometro-botones">
+                                <div id="minuto-a-botones" class="cronometro-botones">
                                     <button id="minuto-a-iniciar" class="btn btn-primario">Iniciar (1:00)</button>
                                     <button id="minuto-a-pausar"  class="btn btn-fantasma" disabled>Pausar</button>
                                     <button id="minuto-a-reset"   class="btn btn-fantasma">Reiniciar</button>
@@ -171,12 +237,38 @@
                                     <span id="minuto-b-display" class="minuto-oro-display">01:00</span>
                                 </div>
                                 <div id="minuto-b-nombre" class="minuto-oro-nombre">Equipo B</div>
-                                <div class="cronometro-botones">
+                                <div id="minuto-b-botones" class="cronometro-botones">
                                     <button id="minuto-b-iniciar" class="btn btn-primario">Iniciar (1:00)</button>
                                     <button id="minuto-b-pausar"  class="btn btn-fantasma" disabled>Pausar</button>
                                     <button id="minuto-b-reset"   class="btn btn-fantasma">Reiniciar</button>
                                 </div>
                                 <div id="minuto-b-estado" class="crono-estado">Listo para empezar.</div>
+                            </div>
+
+                            <div class="minuto-oro-equipo">
+                                <div class="estrella-wrapper" id="estrella-c">
+                                    <span id="minuto-c-display" class="minuto-oro-display">01:00</span>
+                                </div>
+                                <div id="minuto-c-nombre" class="minuto-oro-nombre">Equipo C</div>
+                                <div id="minuto-c-botones" class="cronometro-botones">
+                                    <button id="minuto-c-iniciar" class="btn btn-primario">Iniciar (1:00)</button>
+                                    <button id="minuto-c-pausar"  class="btn btn-fantasma" disabled>Pausar</button>
+                                    <button id="minuto-c-reset"   class="btn btn-fantasma">Reiniciar</button>
+                                </div>
+                                <div id="minuto-c-estado" class="crono-estado">Listo para empezar.</div>
+                            </div>
+
+                            <div class="minuto-oro-equipo">
+                                <div class="estrella-wrapper" id="estrella-d">
+                                    <span id="minuto-d-display" class="minuto-oro-display">01:00</span>
+                                </div>
+                                <div id="minuto-d-nombre" class="minuto-oro-nombre">Equipo D</div>
+                                <div id="minuto-d-botones" class="cronometro-botones">
+                                    <button id="minuto-d-iniciar" class="btn btn-primario">Iniciar (1:00)</button>
+                                    <button id="minuto-d-pausar"  class="btn btn-fantasma" disabled>Pausar</button>
+                                    <button id="minuto-d-reset"   class="btn btn-fantasma">Reiniciar</button>
+                                </div>
+                                <div id="minuto-d-estado" class="crono-estado">Listo para empezar.</div>
                             </div>
                         </div>
 
@@ -214,7 +306,10 @@
                             Aviso: esta combinación ya había salido antes. Puedes volver a girar.
                         </div>
 
-                        <div id="resultado"></div>
+                        <button id="btn-ir-crono" class="btn btn-primario hidden" style="margin-top:1rem;">Ver cronómetro →</button>
+
+                        <div id="crono-contenido">
+                        <div id="resultado" class="hidden"></div>
 
     <!-- DUELO DE PERSONAJE.  -->
                         <!-- Elección de personaje (Duelo de Personajes).-->
@@ -243,7 +338,7 @@
                                 <strong id="duelo-fase-nombre">Preparación</strong>
                             </div>
                             <div id="duelo-display" class="cronometro duelo-display">01:00</div>
-                            <div class="cronometro-botones">
+                            <div id="duelo-botones" class="cronometro-botones">
                                 <button id="duelo-iniciar"    class="btn btn-primario">Iniciar preparación (1:00)</button>
                                 <button id="duelo-argumentar" class="btn btn-secundario" disabled>Iniciar argumentación (1:30)</button>
                                 <button id="duelo-pausar"     class="btn btn-fantasma" disabled>Pausar</button>
@@ -259,7 +354,7 @@
                             <div class="cronometro-marcas">
                                 <span class="marca marca-max">máx. 2:00</span>
                             </div>
-                            <div class="cronometro-botones">
+                            <div id="voces-botones" class="cronometro-botones">
                                 <button id="voces-iniciar" class="btn btn-primario">Iniciar (2:00)</button>
                                 <button id="voces-pausar"  class="btn btn-fantasma" disabled>Pausar</button>
                                 <button id="voces-reset"   class="btn btn-fantasma">Reiniciar</button>
@@ -274,7 +369,7 @@
                                 <strong id="fabrica-fase-nombre">Preparación</strong>
                             </div>
                             <div id="fabrica-display" class="cronometro fabrica-display">00:30</div>
-                            <div class="cronometro-botones">
+                            <div id="fabrica-botones" class="cronometro-botones">
                                 <button id="fabrica-iniciar" class="btn btn-primario">Iniciar preparación (0:30)</button>
                                 <button id="fabrica-discurso" class="btn btn-secundario" disabled>Iniciar discurso (2:00)</button>
                                 <button id="fabrica-pausar"  class="btn btn-fantasma" disabled>Pausar</button>
@@ -290,7 +385,7 @@
                                 <strong id="decla-fase-nombre">Preparación</strong>
                             </div>
                             <div id="decla-display" class="cronometro decla-display">02:00</div>
-                            <div class="cronometro-botones">
+                            <div id="decla-botones" class="cronometro-botones">
                                 <button id="decla-iniciar"  class="btn btn-primario">Iniciar preparación (2:00)</button>
                                 <button id="decla-discurso" class="btn btn-secundario" disabled>Iniciar declamación (2:00 máx.)</button>
                                 <button id="decla-pausar"   class="btn btn-fantasma" disabled>Pausar</button>
@@ -298,6 +393,7 @@
                             </div>
                             <div id="decla-estado" class="crono-estado">Pulsa "Iniciar preparación" cuando el alumno esté listo.</div>
                         </div>
+                        </div><!-- /crono-contenido -->
 
                         <div class="acciones-ruleta">
                             <button id="volver" class="btn btn-fantasma">Volver a selección</button>
@@ -309,6 +405,8 @@
                         <input type="file" id="csv-file" accept=".csv">
                         <button id="procesar-csv" class="btn btn-primario">Procesar CSV</button>
                     </section>
+
+                    </div><!-- /prueba-contenido -->
                 </div>
     
     <!-- Paneles laterales ; historial de sorteos, cronometro de Duelo Final(personaje) y Patata caliente.  -->
@@ -337,7 +435,7 @@
                         </div>
 
                         <!-- Un botón por fase; solo el de la fase activa es visible. -->
-                        <div class="cronometro-botones">
+                        <div id="duelo-final-botones" class="cronometro-botones">
                             <button id="duelo-final-iniciar-prep"    class="btn btn-primario">Iniciar preparación (1:00)</button>
                             <button id="duelo-final-iniciar-expo-a"  class="btn btn-secundario hidden">Exposición inicial (1:00)</button>
                             <button id="duelo-final-iniciar-expo-b"  class="btn btn-secundario hidden">Exposición inicial (1:00)</button>
@@ -359,78 +457,6 @@
                             </div>
                         </div>
                     </aside>
-    <!-- EMPAREJAMIENTO FASE FINAL (Palabra Caliente y Duelo Final) -->
-                    <div id="final-emparejamiento-panel" class="tarjeta hidden">
-                        <h2>Sorteo de enfrentamientos y oradores</h2>
-                        <p class="ayuda" id="final-emparejar-desc">Pulsa el botón para sortear los grupos y sus oradores.</p>
-                        <button id="final-emparejar-btn" class="btn btn-primario">Sortear</button>
-                        <div id="final-emparejamiento-resultado" class="hidden" style="margin-top:1.5rem;display:flex;gap:1.5rem;flex-wrap:wrap;">
-                            <!-- Duelo (2 equipos) -->
-                            <div style="flex:1;min-width:220px;background:var(--azul-fondo, #f0f4ff);border-radius:12px;padding:1rem;">
-                                <div style="font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:var(--azul-principal);margin-bottom:.75rem;">Duelo 1</div>
-                                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">
-                                    <span id="f1-eq1-nombre" style="font-weight:700;font-size:1rem;"></span>
-                                    <span id="f1-eq1-orador" style="font-size:.85rem;color:#555;"></span>
-                                </div>
-                                <div style="font-size:.85rem;color:#888;margin-bottom:.4rem;">vs</div>
-                                <div style="display:flex;align-items:center;gap:.5rem;">
-                                    <span id="f1-eq2-nombre" style="font-weight:700;font-size:1rem;"></span>
-                                    <span id="f1-eq2-orador" style="font-size:.85rem;color:#555;"></span>
-                                </div>
-                            </div>
-                            <!-- Mesa (3 equipos) — solo visible en Palabra Caliente -->
-                            <div id="final-mesa-bloque" style="flex:1;min-width:220px;background:var(--azul-fondo, #f0f4ff);border-radius:12px;padding:1rem;">
-                                <div style="font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:var(--azul-principal);margin-bottom:.75rem;">Mesa — 3 equipos</div>
-                                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">
-                                    <span id="f2-eq1-nombre" style="font-weight:700;font-size:1rem;"></span>
-                                    <span id="f2-eq1-orador" style="font-size:.85rem;color:#555;"></span>
-                                </div>
-                                <div style="font-size:.85rem;color:#888;margin-bottom:.4rem;">→</div>
-                                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">
-                                    <span id="f2-eq2-nombre" style="font-weight:700;font-size:1rem;"></span>
-                                    <span id="f2-eq2-orador" style="font-size:.85rem;color:#555;"></span>
-                                </div>
-                                <div style="font-size:.85rem;color:#888;margin-bottom:.4rem;">→</div>
-                                <div style="display:flex;align-items:center;gap:.5rem;">
-                                    <span id="f2-eq3-nombre" style="font-weight:700;font-size:1rem;"></span>
-                                    <span id="f2-eq3-orador" style="font-size:.85rem;color:#555;"></span>
-                                </div>
-                                <div style="font-size:.75rem;color:#888;margin-top:.5rem;">A→B→C→A→B→C · 15-20 seg cada uno</div>
-                            </div>
-                            <!-- Enfrentamiento 2 para Duelo Final (C-D) -->
-                            <div id="final-enf2-bloque" style="flex:1;min-width:220px;background:var(--azul-fondo, #f0f4ff);border-radius:12px;padding:1rem;">
-                                <div style="font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:var(--azul-principal);margin-bottom:.75rem;">Duelo 2</div>
-                                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">
-                                    <span id="f3-eq1-nombre" style="font-weight:700;font-size:1rem;"></span>
-                                    <span id="f3-eq1-orador" style="font-size:.85rem;color:#555;"></span>
-                                </div>
-                                <div style="font-size:.85rem;color:#888;margin-bottom:.4rem;">vs</div>
-                                <div style="display:flex;align-items:center;gap:.5rem;">
-                                    <span id="f3-eq2-nombre" style="font-weight:700;font-size:1rem;"></span>
-                                    <span id="f3-eq2-orador" style="font-size:.85rem;color:#555;"></span>
-                                </div>
-                            </div>
-                            <!-- Enfrentamiento 3 para Duelo Final (E vs ?) -->
-                            <div id="final-enf3-bloque" style="flex:1;min-width:220px;background:var(--azul-fondo, #f0f4ff);border-radius:12px;padding:1rem;">
-                                <div style="font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:var(--azul-principal);margin-bottom:.75rem;">Duelo 3</div>
-                                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">
-                                    <span id="f4-eq1-nombre" style="font-weight:700;font-size:1rem;"></span>
-                                    <span id="f4-eq1-orador" style="font-size:.85rem;color:#555;"></span>
-                                </div>
-                                <div style="font-size:.85rem;color:#888;margin-bottom:.4rem;">vs</div>
-                                <div style="display:flex;align-items:center;gap:.5rem;">
-                                    <span id="f4-eq2-nombre" style="font-weight:700;font-size:1rem;"></span>
-                                    <span id="f4-eq2-orador" style="font-size:.85rem;color:#555;"></span>
-                                </div>
-                                <div style="font-size:.75rem;color:#888;margin-top:.5rem;">⚡ sorteado al azar</div>
-                            </div>
-                        </div>
-                        <div id="final-sorteo-acciones" class="hidden" style="margin-top:1rem;display:flex;gap:1rem;flex-wrap:wrap;">
-                            <button id="final-emparejar-btn-repetir" class="btn btn-fantasma">Volver a sortear</button>
-                            <button id="final-confirmar-emparejamiento" class="btn btn-primario">Confirmar y continuar</button>
-                        </div>
-                    </div>
-
     <!--LA PALABRA CALIENTE -->
                     <!-- Cronómetro de intervenciones — Final 2 La Palabra Caliente.
                          Los participantes se turnan A, B, A, B, A, B (3 veces cada uno). Al completar los 6 turnos aparece el pop-up de fin. -->
@@ -445,7 +471,7 @@
                             <div id="palabra-turno-info" class="palabra-turno-info">Turno 1 de 6</div>
                         </div>
 
-                        <div class="cronometro-botones">
+                        <div id="palabra-botones" class="cronometro-botones">
                             <button id="palabra-iniciar-crono" class="btn btn-primario">Iniciar</button>
                             <button id="palabra-pausar-crono"  class="btn btn-fantasma" disabled>Pausar</button>
                             <button id="palabra-reset-crono"   class="btn btn-fantasma">Reiniciar</button>
@@ -510,6 +536,31 @@
                                 <input type="text" class="alumno-input" data-idx="5" placeholder="Nombre y apellido">
                             </div>
                         </div>
+                        <div class="sala-selector-row">
+                            <div class="campo sala-selector-campo">
+                                <label for="equipo-sala">Sala</label>
+                                <select id="equipo-sala">
+                                    <option value="">— Elige una sala —</option>
+                                    <option value="Auditorio">Auditorio</option>
+                                    <option value="Ludoteca">Ludoteca</option>
+                                    <option value="Poli 2">Poli 2</option>
+                                </select>
+                            </div>
+                            <div class="sala-contadores">
+                                <div class="sala-contador" id="contador-auditorio">
+                                    <span class="sala-contador-nombre">Auditorio</span>
+                                    <span class="sala-contador-num" id="num-auditorio">0</span>
+                                </div>
+                                <div class="sala-contador" id="contador-ludoteca">
+                                    <span class="sala-contador-nombre">Ludoteca</span>
+                                    <span class="sala-contador-num" id="num-ludoteca">0</span>
+                                </div>
+                                <div class="sala-contador" id="contador-poli2">
+                                    <span class="sala-contador-nombre">Poli 2</span>
+                                    <span class="sala-contador-num" id="num-poli2">0</span>
+                                </div>
+                            </div>
+                        </div>
                         <button type="submit" class="btn btn-primario">Añadir equipo</button>
                     </form>
 
@@ -527,6 +578,14 @@
                     <p class="ayuda">Cada criterio se puntúa de <strong>1 a 4</strong>.</p>
 
                     <div class="form-puntuar">
+                        <div class="campo">
+                            <label for="punt-ronda">Ronda</label>
+                            <select id="punt-ronda">
+                                <option value="">— elige —</option>
+                                <option value="1">Ronda 1</option>
+                                <option value="2">Ronda 2</option>
+                            </select>
+                        </div>
                         <div class="campo">
                             <label for="punt-sala">Sala</label>
                             <select id="punt-sala">
@@ -658,6 +717,24 @@
         <img src="img/chamberi-blanco.png" alt="Logo del Torneo" class="footer-logo">
     </footer>
 <!-- Pop-ups -->
+    <!-- Pop-up de sorteo de orden de equipos -->
+    <div id="sorteo-orden-popup" class="hazme-popup hidden">
+        <div class="sorteo-orden-contenido">
+            <div class="sorteo-orden-reloj">
+                <svg viewBox="0 0 100 100" class="sorteo-reloj-svg">
+                    <circle cx="50" cy="50" r="44" class="sorteo-reloj-cara"/>
+                    <circle cx="50" cy="50" r="44" class="sorteo-reloj-progreso" id="sorteo-reloj-progreso"/>
+                    <line x1="50" y1="50" x2="50" y2="14" class="sorteo-reloj-aguja-min" id="sorteo-reloj-min"/>
+                    <line x1="50" y1="50" x2="50" y2="20" class="sorteo-reloj-aguja-seg" id="sorteo-reloj-seg"/>
+                    <circle cx="50" cy="50" r="3" class="sorteo-reloj-centro"/>
+                </svg>
+            </div>
+            <div class="sorteo-orden-cuenta" id="sorteo-orden-cuenta">5</div>
+            <div class="sorteo-orden-nombre hidden" id="sorteo-orden-nombre"></div>
+            <div class="sorteo-orden-sub" id="sorteo-orden-sub">Sorteando orden…</div>
+        </div>
+    </div>
+
     <!-- Pop-up de llamada de equipo (Hazme fan) -->
     <div id="hazme-popup" class="hazme-popup hidden">
         <div class="hazme-popup-contenido">
@@ -756,6 +833,52 @@
 
     <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <!-- Pop-up genérico de resultado (Voces, Declamación) -->
+    <div id="resultado-popup" class="fabrica-popup hidden">
+        <div class="fabrica-popup-contenido">
+            <div id="resultado-popup-body" style="margin-bottom:1.25rem;"></div>
+            <button id="resultado-popup-cerrar" class="btn btn-primario fabrica-popup-btn">¡Entendido!</button>
+        </div>
+    </div>
+
+    <!-- Overlay de cronómetro a pantalla completa -->
+    <div id="crono-overlay" class="prueba-overlay hidden">
+        <div class="prueba-overlay-barra">
+            <button id="cerrar-crono-overlay" class="btn btn-fantasma">← Volver al inicio</button>
+        </div>
+        <div id="crono-overlay-body"></div>
+    </div>
+
+    <!-- Overlay intro de prueba -->
+    <div id="intro-prueba-overlay" class="hidden">
+        <button id="intro-prueba-volver" class="btn btn-fantasma intro-volver">← Volver</button>
+        <div class="intro-prueba-contenido">
+            <p class="intro-prueba-numero" id="intro-prueba-numero"></p>
+            <h1 id="intro-prueba-titulo"></h1>
+            <p id="intro-prueba-descripcion"></p>
+            <button id="intro-prueba-comenzar" class="btn btn-primario btn-grande">Comenzar prueba →</button>
+        </div>
+    </div>
+
+    <!-- Overlay de prueba a pantalla completa -->
+    <div id="prueba-overlay" class="prueba-overlay hidden">
+        <div class="prueba-overlay-barra">
+            <button id="cerrar-prueba-overlay" class="btn btn-fantasma">← Volver</button>
+        </div>
+        <div id="prueba-overlay-body" class="contenedor-principal"></div>
+    </div>
+
+    <!-- Popup gigante de cronómetro -->
+    <div id="crono-gigante" class="hidden">
+        <button id="crono-gigante-cerrar" class="btn btn-fantasma">✕ Salir</button>
+        <div id="crono-gigante-timer-area">
+            <div id="crono-gigante-estrella"></div>
+            <div id="crono-gigante-display">00:00</div>
+        </div>
+        <div id="crono-gigante-label"></div>
+        <div id="crono-gigante-botones"></div>
+    </div>
+
     <script src="datos-pruebas.js"></script>
     <script src="script.js"></script>
 </body>

@@ -83,7 +83,7 @@ if ($method === 'POST') {
     // ── POST /api/equipos — añade un equipo de forma atómica ─────────────────
     if (str_ends_with($uri, '/api/equipos') || str_ends_with($uri, '/api.php/equipos')) {
         $equipo = $parsed;
-        $fp = fopen($DATA_FILE ?: $DATA_FILE, 'c+');
+        $fp = fopen($DATA_FILE, 'c+');
         flock($fp, LOCK_EX);
         $json  = stream_get_contents($fp) ?: json_encode($VACIO);
         $datos = json_decode($json, true) ?: $VACIO;
@@ -107,6 +107,21 @@ if ($method === 'POST') {
         $datos = json_decode($json, true) ?: $VACIO;
         $datos['equipos']      = array_values(array_filter($datos['equipos'],      fn($e) => $e['id'] !== $id));
         $datos['puntuaciones'] = array_values(array_filter($datos['puntuaciones'], fn($p) => $p['equipoId'] !== $id));
+        ftruncate($fp, 0); rewind($fp);
+        fwrite($fp, json_encode($datos, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        flock($fp, LOCK_UN); fclose($fp);
+        echo json_encode($datos, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // ── POST /api/puntuaciones/borrar — elimina una puntuación por id ────────
+    if (str_ends_with($uri, '/api/puntuaciones/borrar') || str_ends_with($uri, '/api.php/puntuaciones/borrar')) {
+        $id = $parsed['id'] ?? null;
+        $fp = fopen($DATA_FILE, 'c+');
+        flock($fp, LOCK_EX);
+        $json  = stream_get_contents($fp) ?: json_encode($VACIO);
+        $datos = json_decode($json, true) ?: $VACIO;
+        $datos['puntuaciones'] = array_values(array_filter($datos['puntuaciones'], fn($p) => $p['id'] !== $id));
         ftruncate($fp, 0); rewind($fp);
         fwrite($fp, json_encode($datos, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         flock($fp, LOCK_UN); fclose($fp);

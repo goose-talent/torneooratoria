@@ -480,6 +480,27 @@ function generarPaginaResultados(eq, puntuaciones) {
     const CLASIF_IDS = ['hazme-fan', 'fabrica-historias', 'voces-derecho', 'duelo-personajes'];
     const FINAL_IDS  = ['declamacion', 'palabra-caliente', 'duelo-personajes-final', 'minuto-oro'];
 
+    const CRITERIOS_NOMBRES = {
+        'hazme-fan':              ['Contenido y argumentos','Persuasión y emoción','Expresión oral','Lenguaje corporal','Organización'],
+        'fabrica-historias':      ['Creatividad','Estructura narrativa','Coherencia','Expresión oral','Lenguaje corporal'],
+        'voces-derecho':          ['Comprensión','Razonamiento','Organización','Expresión oral','Lenguaje corporal'],
+        'duelo-personajes':       ['Argumentación','Defensa','Capacidad respuesta','Expresión oral','Actitud'],
+        'declamacion':            ['Expresividad','Uso voz','Ritmo y pausas','Comprensión','Presencia escénica'],
+        'palabra-caliente':       ['Escucha','Coherencia','Aportación ideas','Expresión oral','Seguridad'],
+        'duelo-personajes-final': ['Argumentación','Defensa','Réplica','Escucha activa','Expresión oral'],
+        'minuto-oro':             ['Persuasión','Estructura','Expresión oral','Creatividad','Trabajo equipo'],
+    };
+    const CRITERIOS_IDS = {
+        'hazme-fan':              ['opinion','razones','emocion','enganchar','organizar'],
+        'fabrica-historias':      ['inicio','nudo','desenlace','personajes','emocion'],
+        'voces-derecho':          ['explicar','argumentar','defender','reflexionar','lenguaje'],
+        'duelo-personajes':       ['argumentacion','defensa','replica','expresion','actitud'],
+        'declamacion':            ['expresividad','voz','ritmo','comprension','presencia'],
+        'palabra-caliente':       ['escucha','coherencia','aportacion','expresion','fluidez'],
+        'duelo-personajes-final': ['argumentacion','defensa','replica','escucha','expresion'],
+        'minuto-oro':             ['persuasion','estructura','expresion','creatividad','respeto'],
+    };
+
     const puntsEq     = puntuaciones.filter(p => p.equipoId === eq.id);
     const totalClasif = puntsEq.filter(p => CLASIF_IDS.includes(p.prueba)).reduce((s, p) => s + p.total, 0);
     const totalFinal  = puntsEq.filter(p => FINAL_IDS.includes(p.prueba)).reduce((s, p) => s + p.total, 0);
@@ -490,13 +511,17 @@ function generarPaginaResultados(eq, puntuaciones) {
     PRUEBAS.forEach(pr => {
         const registros = puntsEq.filter(p => p.prueba === pr.id);
         if (!registros.length) return;
+        const criIds     = CRITERIOS_IDS[pr.id]     || [];
+        const criNombres = CRITERIOS_NOMBRES[pr.id]  || [];
         secciones.push({
-            label: pr.label,
-            fase:  pr.fase,
+            label:     pr.label,
+            fase:      pr.fase,
+            criterios: criNombres,
             filas: registros.map(p => ({
-                alumno: p.alumnoNombreOtro || (eq.alumnos && eq.alumnos[p.alumnoIdx]) || `Alumno ${p.alumnoIdx + 1}`,
-                total:  p.total,
-                aviso:  p.aviso || '—'
+                alumno:    p.alumnoNombreOtro || (eq.alumnos && eq.alumnos[p.alumnoIdx]) || `Alumno ${p.alumnoIdx + 1}`,
+                criterios: criIds.map(id => (p.criterios && p.criterios[id] != null) ? p.criterios[id] : '—'),
+                total:     p.total,
+                aviso:     p.aviso || '—'
             }))
         });
     });
@@ -505,7 +530,7 @@ function generarPaginaResultados(eq, puntuaciones) {
         nombre:   eq.nombre,
         secciones,
         totales: { clasificacion: totalClasif, final: totalFinal, general: totalGen }
-    });
+    }).replace(/</g, '\\u003c');
 
     return `<!DOCTYPE html>
 <html lang="es">
@@ -593,16 +618,27 @@ function generarPaginaResultados(eq, puntuaciones) {
             doc.text(sec.fase, W - 16, y + 5.5, { align: 'right' });
             y += 10;
 
-            // Tabla
+            // Tabla con criterios
+            const nCri = sec.criterios.length;
+            const colStyles = { 0: { cellWidth: 38 } };
+            for (let i = 1; i <= nCri; i++) colStyles[i] = { halign: 'center', cellWidth: 16 };
+            colStyles[nCri + 1] = { halign: 'center', fontStyle: 'bold', cellWidth: 28 };
+            colStyles[nCri + 2] = { halign: 'center', cellWidth: 20 };
+
             doc.autoTable({
                 startY: y,
                 margin: { left: 14, right: 14 },
-                head: [['Alumno', 'Puntuación', 'Aviso']],
-                body: sec.filas.map(f => [f.alumno, f.total + ' pts', f.aviso]),
-                headStyles:    { fillColor: [58, 155, 213], textColor: 255, fontStyle: 'bold', fontSize: 8 },
-                bodyStyles:    { fontSize: 8, textColor: [13, 43, 85] },
+                head: [['Alumno', ...sec.criterios, 'Total', 'Aviso']],
+                body: sec.filas.map(f => [
+                    f.alumno,
+                    ...f.criterios,
+                    f.aviso === 'falta-leve' ? \`\${f.total + 1} - 1 = \${f.total} pts\` : f.total + ' pts',
+                    f.aviso
+                ]),
+                headStyles:    { fillColor: [58, 155, 213], textColor: 255, fontStyle: 'bold', fontSize: 7 },
+                bodyStyles:    { fontSize: 7, textColor: [13, 43, 85] },
                 alternateRowStyles: { fillColor: [237, 245, 255] },
-                columnStyles:  { 1: { halign: 'center' }, 2: { halign: 'center' } },
+                columnStyles:  colStyles,
                 theme: 'grid',
             });
             y = doc.lastAutoTable.finalY + 6;
