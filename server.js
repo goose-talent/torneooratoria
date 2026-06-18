@@ -16,20 +16,16 @@
 'use strict';
 
 const http    = require('http');
+const https   = require('https');
 const fs      = require('fs');
 const path    = require('path');
 const os      = require('os');
 const ExcelJS = require('exceljs');
 
-// ── Configuración ───────────────────────────────────────────────────────────
-const PORT      = 3000;
-// Ruta absoluta al fichero JSON que hace de "base de datos"
-const DATA_FILE = path.join(__dirname, 'datos.json');
-// Carpeta raíz desde la que servir los ficheros estáticos
-const ROOT      = __dirname;
+const PORT = 3000;
+const ROOT = __dirname;
+const PHP_API = 'http://127.0.0.1:8081/api.php';
 
-// ── Tipos MIME ───────────────────────────────────────────────────────────────
-// El navegador necesita saber el tipo de cada fichero para procesarlo bien.
 const MIME = {
     '.html': 'text/html; charset=utf-8',
     '.css':  'text/css; charset=utf-8',
@@ -43,7 +39,6 @@ const MIME = {
     '.ico':  'image/x-icon',
 };
 
-// ── Utilidad: leer el cuerpo completo de una petición POST ──────────────────
 function leerCuerpo(req) {
     return new Promise((resolve, reject) => {
         let body = '';
@@ -53,17 +48,35 @@ function leerCuerpo(req) {
     });
 }
 
-// ── Helpers de acceso a datos.json ──────────────────────────────────────────
-// readFileSync y writeFileSync son síncronos: entre ellos ninguna otra petición
-// puede ejecutarse en el event loop, por lo que la secuencia leer→modificar→escribir
-// es atómica respecto a otras peticiones concurrentes.
-function leerDatos() {
-    if (!fs.existsSync(DATA_FILE)) return { equipos: [], puntuaciones: [] };
-    try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
-    catch { return { equipos: [], puntuaciones: [] }; }
-}
-function escribirDatos(datos) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(datos, null, 2), 'utf8');
+function llamarPHP(action, payload = null) {
+    return new Promise((resolve, reject) => {
+        const url      = `${PHP_API}?action=${action}`;
+        const metodo   = payload ? 'POST' : 'GET';
+        const cuerpo   = payload ? JSON.stringify(payload) : null;
+        const modulo   = url.startsWith('https') ? https : http;
+        const urlObj   = new URL(url);
+
+        const opciones = {
+            hostname: urlObj.hostname,
+            port:     urlObj.port || (url.startsWith('https') ? 443 : 80),
+            path:     urlObj.pathname + urlObj.search,
+            method:   metodo,
+            headers:  { 'Content-Type': 'application/json' },
+        };
+        if (cuerpo) opciones.headers['Content-Length'] = Buffer.byteLength(cuerpo);
+
+        const req = modulo.request(opciones, phpRes => {
+            let data = '';
+            phpRes.on('data', chunk => data += chunk);
+            phpRes.on('end',  ()    => {
+                try { resolve(JSON.parse(data)); }
+                catch { reject(new Error('Respuesta PHP no válida: ' + data)); }
+            });
+        });
+        req.on('error', reject);
+        if (cuerpo) req.write(cuerpo);
+        req.end();
+    });
 }
 
 // ── Manejador principal de peticiones ───────────────────────────────────────
@@ -83,19 +96,12 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    const url = req.url.split('?')[0]; // ignorar query string
-// IMPORTANTE POR LA SIMULTANEIDAD: cada petición se maneja de forma independiente, sin variables globales compartidas.
-    // ── POST /api/equipos 
+    const url = req.url.split('?')[0];
 
     if (req.method === 'POST' && url === '/api/equipos') {
         try {
-            const body   = await leerCuerpo(req);
-            const equipo = JSON.parse(body);
-            const datos  = leerDatos();
-            if (!datos.equipos.find(e => e.id === equipo.id)) {
-                datos.equipos.push(equipo);
-                escribirDatos(datos);
-            }
+            const equipo = JSON.parse(await leerCuerpo(req));
+            const datos  = await llamarPHP('equipo_añadir', equipo);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(datos));
         } catch (err) {
@@ -106,15 +112,10 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ── POST /api/equipos/borrar
     if (req.method === 'POST' && url === '/api/equipos/borrar') {
         try {
-            const body      = await leerCuerpo(req);
-            const { id }    = JSON.parse(body);
-            const datos     = leerDatos();
-            datos.equipos      = datos.equipos.filter(e => e.id !== id);
-            datos.puntuaciones = datos.puntuaciones.filter(p => p.equipoId !== id);
-            escribirDatos(datos);
+            const { id } = JSON.parse(await leerCuerpo(req));
+            const datos  = await llamarPHP('equipo_borrar', { id });
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(datos));
         } catch (err) {
@@ -125,16 +126,24 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ── POST /api/puntuaciones
+    if (req.method === 'POST' && url === '/api/equipos/editar') {
+        try {
+            const equipo = JSON.parse(await leerCuerpo(req));
+            const datos  = await llamarPHP('equipo_editar', equipo);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(datos));
+        } catch (err) {
+            console.error('[API] Error editando equipo:', err);
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Error al editar equipo.' }));
+        }
+        return;
+    }
+
     if (req.method === 'POST' && url === '/api/puntuaciones') {
         try {
-            const body  = await leerCuerpo(req);
-            const punt  = JSON.parse(body);
-            const datos = leerDatos();
-            if (!datos.puntuaciones.find(p => p.id === punt.id)) {
-                datos.puntuaciones.push(punt);
-                escribirDatos(datos);
-            }
+            const punt  = JSON.parse(await leerCuerpo(req));
+            const datos = await llamarPHP('puntuacion_añadir', punt);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(datos));
         } catch (err) {
@@ -145,14 +154,10 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ── POST /api/puntuaciones/borrar
     if (req.method === 'POST' && url === '/api/puntuaciones/borrar') {
         try {
-            const body  = await leerCuerpo(req);
-            const { id } = JSON.parse(body);
-            const datos = leerDatos();
-            datos.puntuaciones = datos.puntuaciones.filter(p => p.id !== id);
-            escribirDatos(datos);
+            const { id } = JSON.parse(await leerCuerpo(req));
+            const datos  = await llamarPHP('puntuacion_borrar', { id });
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(datos));
         } catch (err) {
@@ -192,10 +197,9 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ── GET /api/excel/:id ──────────────────────────────────────────────────
     if (req.method === 'GET' && url.startsWith('/api/excel/')) {
         const id    = decodeURIComponent(url.split('/api/excel/')[1]);
-        const datos = leerDatos();
+        const datos = await llamarPHP('datos');
         const eq    = datos.equipos.find(e => e.id === id);
         if (!eq) { res.writeHead(404); res.end('Equipo no encontrado'); return; }
         try {
@@ -215,10 +219,23 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ── GET /resultados/:id ─────────────────────────────────────────────────
+    if (req.method === 'GET' && (url === '/formulario' || url === '/formulario/')) {
+        const phpPath = path.join(ROOT, 'inscripcion.php');
+        if (fs.existsSync(phpPath)) {
+            let contenido = fs.readFileSync(phpPath, 'utf-8');
+            contenido = contenido.replace(/^<\?php[\s\S]*?\?>\s*/m, '');
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(contenido);
+        } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Formulario no encontrado');
+        }
+        return;
+    }
+
     if (req.method === 'GET' && url.startsWith('/resultados/')) {
         const id     = decodeURIComponent(url.split('/resultados/')[1]);
-        const datos  = leerDatos();
+        const datos  = await llamarPHP('datos');
         const eq     = datos.equipos.find(e => e.id === id);
         if (!eq) {
             res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -231,41 +248,69 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // ── GET /api/datos ───────────────────────────────────────────────────────
-    // Devuelve el contenido de datos.json. Si el fichero no existe todavía,
-    // devuelve un objeto vacío con las dos claves esperadas.
-    if (req.method === 'GET' && url === '/api/datos') {
+    if (req.method === 'GET' && url === '/api/inscripciones') {
         try {
-            const contenido = fs.existsSync(DATA_FILE)
-                ? fs.readFileSync(DATA_FILE, 'utf8')
-                : JSON.stringify({ equipos: [], puntuaciones: [] }, null, 2);
+            const datos = await llamarPHP('inscripciones');
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(contenido);
+            res.end(JSON.stringify(datos));
         } catch (err) {
-            console.error('[API] Error leyendo datos.json:', err);
+            console.error('[API] Error leyendo inscripciones:', err);
             res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Error interno al leer los datos.' }));
+            res.end(JSON.stringify({ error: 'Error al leer inscripciones.' }));
         }
         return;
     }
 
-    // ── POST /api/datos ──────────────────────────────────────────────────────
-    // Recibe un JSON con { equipos, puntuaciones } y lo guarda en datos.json.
-    if (req.method === 'POST' && url === '/api/datos') {
+    if (req.method === 'POST' && url === '/api/inscripciones') {
         try {
-            const body = await leerCuerpo(req);
-            // Validamos que sea JSON válido antes de escribirlo a disco
-            JSON.parse(body);
-            // Guardamos con formato legible (sangría de 2 espacios) por si alguien
-            // necesita abrir datos.json en un editor de texto
-            const formateado = JSON.stringify(JSON.parse(body), null, 2);
-            fs.writeFileSync(DATA_FILE, formateado, 'utf8');
+            const ins  = JSON.parse(await leerCuerpo(req));
+            const datos = await llamarPHP('inscripcion_añadir', ins);
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ ok: true }));
+            res.end(JSON.stringify(datos));
         } catch (err) {
-            console.error('[API] Error guardando datos.json:', err);
+            console.error('[API] Error añadiendo inscripción:', err);
             res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'JSON inválido o error al escribir.' }));
+            res.end(JSON.stringify({ error: 'Error al guardar la inscripción.' }));
+        }
+        return;
+    }
+
+    if (req.method === 'POST' && url === '/api/inscripciones/editar') {
+        try {
+            const datos = await llamarPHP('inscripcion_editar', JSON.parse(await leerCuerpo(req)));
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(datos));
+        } catch (err) {
+            console.error('[API] Error editando inscripción:', err);
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Error al editar inscripción.' }));
+        }
+        return;
+    }
+
+    if (req.method === 'POST' && url === '/api/inscripciones/borrar') {
+        try {
+            const { id } = JSON.parse(await leerCuerpo(req));
+            const datos  = await llamarPHP('inscripcion_borrar', { id });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(datos));
+        } catch (err) {
+            console.error('[API] Error borrando inscripción:', err);
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Error al borrar inscripción.' }));
+        }
+        return;
+    }
+
+    if (req.method === 'GET' && url === '/api/datos') {
+        try {
+            const datos = await llamarPHP('datos');
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(datos));
+        } catch (err) {
+            console.error('[API] Error leyendo datos:', err);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Error interno al leer los datos.' }));
         }
         return;
     }
@@ -695,7 +740,7 @@ server.listen(PORT, () => {
     console.log('');
     console.log('  ✓ Servidor del Torneo de Oratoria arrancado');
     console.log(`  → Abre en el navegador: http://localhost:${PORT}`);
-    console.log(`  → Datos guardados en:   ${DATA_FILE}`);
+    console.log(`  → Base de datos:        MySQL · torneo_oratoria`);
     console.log('  → Para parar el servidor: Ctrl + C');
     console.log('');
 });

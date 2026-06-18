@@ -4,18 +4,13 @@ const FASE_FINAL         = ['declamacion', 'palabra-caliente', 'duelo-personajes
 
 const SALAS_ORDEN = ['Auditorio', 'Ludoteca', 'Poli 2'];
 
-let salaSorteoActual  = '';
-let rondaSorteoActual = '';
-let rondaActual       = '';
+let salaSorteoActual = '';
+let rondaActual      = '';
 
-function equiposDeSalaYRonda(sala, turno) {
+function equiposDeSalaYRonda(sala) {
     if (!sala) return equipos;
-    const turnoEfectivo = turno || '1';
-    const idx = SALAS_ORDEN.indexOf(sala);
-    if (idx === -1) return equipos;
-    const idxOrigen = ((idx - (Number(turnoEfectivo) - 1)) % 3 + 3) % 3;
-    const salaOrigen = SALAS_ORDEN[idxOrigen];
-    const filtrados = equipos.filter(e => e.sala === salaOrigen);
+    const campo = rondaActual === '2' ? 'sala_r2' : 'sala';
+    const filtrados = equipos.filter(e => e[campo] === sala);
     return filtrados.length ? filtrados : equipos;
 }
 
@@ -63,7 +58,7 @@ const configuraciones = {
     },
     'minuto-oro': {
         titulo: 'Final 4 — El Minuto de Oro',
-        descripcion: 'En esta prueba, un representante de cada equipo realizará un discurso breve y persuasivo para convencer al jurado de por qué su equipo debe ganar la final del II Concurso de Oratoria. Se trata de un elevator pitch preparado previamente en el que deberá sintetizar ideas, emocionar y persuadir en un tiempo muy limitado.',
+        descripcion: `En esta prueba, un representante de cada equipo realizará un discurso breve y persuasivo para convencer al jurado de por qué su equipo debe ganar la final del ${CONFIG.nombreCorto}. Se trata de un elevator pitch preparado previamente en el que deberá sintetizar ideas, emocionar y persuadir en un tiempo muy limitado.`,
         tipo: 'minuto-oro'
     }
 };
@@ -175,7 +170,7 @@ async function cargarDatos() {
         equipos      = [];
         puntuaciones = [];
         mostrarEstadoServidor(
-            '✗ No se puede conectar con el servidor. Abre la página desde iniciar.bat (http://localhost:3000)',
+            '✗ No se puede conectar con el servidor.',
             true
         );
     }
@@ -386,8 +381,8 @@ async function init() {
 }
 
 
-// /* 5) NAVEGACIÓN ENTRE PESTAÑAS */
-const TABS_PROTEGIDAS = ['equipos', 'ranking'];
+/* 5) NAVEGACIÓN ENTRE PESTAÑAS */
+const TABS_PROTEGIDAS = ['equipos', 'agrupacion', 'ranking'];
 const CONTRASENA_TABS = 'oratoria2025';
 let tabsDesbloqueadas = false;
 let tabPendiente = null;
@@ -412,7 +407,8 @@ function activarTab(modo) {
     document.querySelector(`.tab[data-modo="${modo}"]`).classList.add('tab-activa');
     document.querySelectorAll('.modo').forEach(m => m.classList.remove('activo'));
     $('modo-' + modo).classList.add('activo');
-    if (modo === 'ranking') { renderRanking(); renderDetalleRanking(); }
+    if (modo === 'ranking')    { renderRanking(); renderDetalleRanking(); }
+    if (modo === 'agrupacion') { renderAgrupacion(); }
 }
 
 function montarModalContrasena() {
@@ -464,13 +460,11 @@ function montarSorteos() {
     $('crono-gigante-cerrar').addEventListener('click', ocultarCronoGigante);
 
     $('sorteo-sala-select').addEventListener('change', e => {
-        salaSorteoActual = e.target.value;
-        actualizarSesionInfo();
-        renderHazmeEquipos();
-        renderRuletaEquipos();
-    });
-    $('sorteo-turno-select').addEventListener('change', e => {
-        rondaSorteoActual = e.target.value;
+        salaSorteoActual  = e.target.value;
+        ruletaOrdenTurnos = [];
+        ordenGlobalTurnos = [];
+        pruebaConOrden    = null;
+        pararRuletaSelectorSilencioso();
         actualizarSesionInfo();
         renderHazmeEquipos();
         renderRuletaEquipos();
@@ -478,6 +472,8 @@ function montarSorteos() {
     $('sorteo-ronda-select').addEventListener('change', e => {
         rondaActual = e.target.value;
         actualizarSesionInfo();
+        renderHazmeEquipos();
+        renderRuletaEquipos();
         sincronizarRondaEnPuntuacion();
     });
 }
@@ -486,19 +482,17 @@ function actualizarSesionInfo() {
     const info = $('sesion-equipos-info');
     if (!info) return;
     if (!salaSorteoActual) { info.textContent = ''; return; }
-    const turnoEfectivo = rondaSorteoActual || '1';
-    const equiposFiltrados = equiposDeSalaYRonda(salaSorteoActual, turnoEfectivo);
-    const idx = SALAS_ORDEN.indexOf(salaSorteoActual);
-    const idxOrigen = ((idx - (Number(turnoEfectivo) - 1)) % 3 + 3) % 3;
-    const salaOrigen = SALAS_ORDEN[idxOrigen];
-    const turnoTxt = rondaSorteoActual ? ` · Turno ${rondaSorteoActual}` : '';
+    const equiposFiltrados = equiposDeSalaYRonda(salaSorteoActual);
     const rondaTxt = rondaActual ? ` · Ronda ${rondaActual}` : '';
-    info.textContent = `Equipos de ${salaOrigen} en ${salaSorteoActual}${turnoTxt}${rondaTxt} — ${equiposFiltrados.length} equipo${equiposFiltrados.length !== 1 ? 's' : ''}`;
+    info.textContent = `Equipos de ${salaSorteoActual}${rondaTxt} — ${equiposFiltrados.length} equipo${equiposFiltrados.length !== 1 ? 's' : ''}`;
 }
 
 function sincronizarRondaEnPuntuacion() {
     const sel = $('punt-ronda');
-    if (sel && rondaActual) sel.value = rondaActual;
+    if (sel && rondaActual) {
+        sel.value = rondaActual;
+        actualizarEquiposPuntuacion();
+    }
 }
 
 function abrirCronoOverlay(prepararFn, extrasIds = []) {
@@ -557,10 +551,15 @@ function cargarPrueba() {
     const config = configuraciones[prueba];
     ocultarSeccionesSorteo();
 
-    const usaSelector = FASE_CLASIFICACION.includes(prueba) || prueba === 'declamacion';
+    const usaSelector = (FASE_CLASIFICACION.includes(prueba) || FASE_FINAL.includes(prueba))
+        && prueba !== 'duelo-personajes-final'
+        && prueba !== 'palabra-caliente';
     if (usaSelector) {
         ruletaEquiposSelector.classList.remove('hidden');
-        inicializarRuletaSelector(null);
+        const permitidos = FASE_FINAL.includes(prueba)
+            ? obtenerTop4Clasificacion().map(e => e.id)
+            : null;
+        inicializarRuletaSelector(permitidos);
     }
 
     const btnWrapper = $('btn-acceder-prueba-wrapper');
@@ -606,8 +605,10 @@ function continuarCargaPrueba(prueba) {
         tituloPrueba.textContent = config.titulo;
         if (prueba !== 'duelo-personajes-final') {
             ruletaEquiposSelector.classList.remove('hidden');
-
-            inicializarRuletaSelector(null);
+            const permitidosFinal = FASE_FINAL.includes(prueba)
+                ? obtenerTop4Clasificacion().map(e => e.id)
+                : null;
+            inicializarRuletaSelector(permitidosFinal);
         }
 
         if (DATOS_PRUEBAS[prueba]) {
@@ -681,7 +682,7 @@ function ocultarSeccionesSorteo() {
 function volverSeleccion() {
     ocultarSeccionesSorteo();
     pruebaSelect.value = '';
-    if (ordenGlobalTurnos.length > 0) {
+    if (ordenGlobalTurnos.length > 0 || ordenGlobalFinalTurnos.length > 0) {
         ruletaEquiposSelector.classList.remove('hidden');
         renderRuletaEquipos();
     }
@@ -861,7 +862,6 @@ function girarRuleta() {
     const config = configuraciones[prueba];
 
     if (config.tipo === 'multiple') {
-        // Antes de que gire se limpia avisos, cronómetro y resultados.
         if (prueba === 'fabrica-historias') {
             avisoRepetida.classList.add('hidden');
             fabricaCrono.classList.add('hidden');
@@ -873,7 +873,6 @@ function girarRuleta() {
                 resBox.classList.remove('recien-aterrizado');
             });
         }
-        // Las tres ruletas giran a la vez. Cuando todas terminan, se muestra resumen.
         const resultados = {};
         let completados = 0;
         canvasList.forEach(({ canvas, opciones, nombre }) => {
@@ -883,18 +882,15 @@ function girarRuleta() {
             });
         });
     } else if (config.tipo === 'simple') {
-        // Antes de un nuevo giro en Voces: ocultar el cronómetro de la intervención previa.
         if (prueba === 'voces-derecho') {
             vocesCrono.classList.add('hidden');
             pararVocesSilencioso();
         }
-        // Antes de un nuevo giro en Palabra Caliente: resetear el cronómetro de turnos.
         if (prueba === 'palabra-caliente') {
             pararPalabraCalienteSilencioso();
             resetPalabraCaliente();
         }
         let opciones = canvasList[0].opciones;
-        // Solo La Palabra Caliente no puede repetir; filtramos los ya usados.
         if (prueba === 'palabra-caliente') {
             const disponibles = opciones.filter(op => !usados[prueba].includes(op));
             if (disponibles.length === 0) {
@@ -1196,7 +1192,7 @@ function bip(freq = 660) {
 }
 
 
-// /*    12b) HAZME FAN — Selector de equipos 
+/* 12b) HAZME FAN — Selector de equipos */
 let hazmeEquiposSeleccionados = [];
 let hazmeCuentaInterval = null;
 
@@ -1215,7 +1211,7 @@ function inicializarHazmeSelector() {
 function renderHazmeEquipos() {
     if (!hazmeEquiposGrid) return;
 
-    const equiposSala = equiposDeSalaYRonda(salaSorteoActual, rondaSorteoActual);
+    const equiposSala = equiposDeSalaYRonda(salaSorteoActual);
     const restantes = equiposSala.filter(e => !hazmeEquiposSeleccionados.includes(e.id));
 
     if (equiposSala.length < 3) {
@@ -1242,7 +1238,7 @@ function renderHazmeEquipos() {
 }
 
 function seleccionarEquipoHazme() {
-    const equiposSala = equiposDeSalaYRonda(salaSorteoActual, rondaSorteoActual);
+    const equiposSala = equiposDeSalaYRonda(salaSorteoActual);
     const restantes = equiposSala.filter(e => !hazmeEquiposSeleccionados.includes(e.id));
     if (restantes.length === 0) return;
 
@@ -1286,17 +1282,11 @@ let ordenGlobalTurnos  = [];
 let ordenGlobalOffset  = 0;
 let pruebaConOrden     = null;
 
+let ordenGlobalFinalTurnos = [];
+let ordenGlobalFinalOffset = 0;
+
 let ruletaCuentaInterval = null;
 let ruletaEquiposPermitidos = null;
-
-function obtenerTop2Clasificacion() {
-    return equipos
-        .map(eq => ({ id: eq.id, nombre: eq.nombre, pts: totalEquipo(eq.id, 'clasificacion') }))
-        .filter(eq => eq.pts > 0)
-        .sort((a, b) => b.pts - a.pts)
-        .slice(0, 2)
-        .map(eq => eq.id);
-}
 
 function obtenerTop4Clasificacion() {
     return equipos
@@ -1306,17 +1296,12 @@ function obtenerTop4Clasificacion() {
         .slice(0, 4);
 }
 
-function obtenerEquiposFinales() {
-    return equipos.map(eq => ({ id: eq.id, nombre: eq.nombre }));
-}
 let finalEquipo1 = null;
 let finalEquipo2 = null;
 let finalEquipo3 = null;
 let finalEquipo4 = null;
 
 function oradorAleatorio() { return Math.random() < 0.5 ? 'Orador A' : 'Orador B'; }
-
-let finalEquipo5 = null;
 
 function mostrarEmparejamientoFinal(prueba) {
     const panel      = $('final-emparejamiento-panel');
@@ -1334,8 +1319,6 @@ function mostrarEmparejamientoFinal(prueba) {
 
     const esPalabraCaliente = prueba === 'palabra-caliente';
 
-    // Palabra Caliente: 2 parejas con top 4 clasificados
-    // Duelo Final:      2 duelos con top 4 clasificados
     mesaBloque.style.display  = 'none';
     enf2Bloque.style.display  = '';
     const enf3Bloque = $('final-enf3-bloque');
@@ -1381,7 +1364,7 @@ function mostrarEmparejamientoFinal(prueba) {
 function continuarPruebaFinal(prueba) {
     if (prueba === 'palabra-caliente') {
         ruletaEquiposSelector.classList.remove('hidden');
-        inicializarRuletaSelector(null);
+        inicializarRuletaSelector(obtenerTop4Clasificacion().map(e => e.id));
         if (DATOS_PRUEBAS[prueba]) {
             cargarDatosEnRuleta(prueba, DATOS_PRUEBAS[prueba], true);
         } else {
@@ -1440,29 +1423,6 @@ function pararRuletaSelectorSilencioso() {
     palabraPcChipActual = null;
 }
 
-const primerosEnSala = {};
-
-function registrarPrimero(sala, ronda, equipoId) {
-    const clave = `${sala}|${ronda}`;
-    if (!primerosEnSala[clave]) primerosEnSala[clave] = [];
-    const equiposDeSala = equiposDeSalaYRonda(sala, ronda).map(e => e.id);
-    const yaUsados = primerosEnSala[clave];
-    const pendientes = equiposDeSala.filter(id => !yaUsados.includes(id));
-    if (pendientes.length === 0) {
-        primerosEnSala[clave] = [equipoId];
-    } else {
-        primerosEnSala[clave].push(equipoId);
-    }
-}
-
-function equiposPendientesDePrimero(sala, ronda) {
-    const clave = `${sala}|${ronda}`;
-    const equiposDeSala = equiposDeSalaYRonda(sala, ronda).map(e => e.id);
-    const yaUsados = primerosEnSala[clave] || [];
-    const pendientes = equiposDeSala.filter(id => !yaUsados.includes(id));
-    return pendientes.length > 0 ? pendientes : equiposDeSala;
-}
-
 function inicializarRuletaSelector(equiposPermitidos = null) {
     ruletaEquiposSeleccionados = [];
     ruletaEquiposPermitidos    = equiposPermitidos;
@@ -1472,7 +1432,19 @@ function inicializarRuletaSelector(equiposPermitidos = null) {
 
     const prueba = pruebaSelect ? pruebaSelect.value : '';
 
-    if (ordenGlobalTurnos.length > 0 && !equiposPermitidos) {
+    if (equiposPermitidos && ordenGlobalFinalTurnos.length > 0) {
+        if (prueba !== pruebaConOrden) {
+            if (pruebaConOrden !== null) ordenGlobalFinalOffset++;
+            pruebaConOrden = prueba;
+        }
+        const n = ordenGlobalFinalTurnos.length;
+        const off = ordenGlobalFinalOffset % n;
+        ruletaOrdenTurnos = [
+            ...ordenGlobalFinalTurnos.slice(off),
+            ...ordenGlobalFinalTurnos.slice(0, off)
+        ];
+        ruletaEquiposSeleccionados = [...ruletaOrdenTurnos];
+    } else if (!equiposPermitidos && ordenGlobalTurnos.length > 0) {
         if (prueba !== pruebaConOrden) {
             if (pruebaConOrden !== null) ordenGlobalOffset++;
             pruebaConOrden = prueba;
@@ -1502,14 +1474,14 @@ function renderRuletaEquipos() {
     const equiposActivos = ruletaEquiposPermitidos
         ? equipos.filter(e => ruletaEquiposPermitidos.includes(e.id))
         : usarFiltroSala
-            ? equiposDeSalaYRonda(salaSorteoActual, rondaSorteoActual)
+            ? equiposDeSalaYRonda(salaSorteoActual)
             : equipos;
 
     if (ruletaEquiposPermitidos !== null && equiposActivos.length === 0) {
         ruletaEquiposGrid.innerHTML = '';
         ruletaSeleccionarBtn.disabled = true;
         ruletaSelectorEstado.textContent =
-            'Aún no hay equipos clasificados. Puntúa las 4 pruebas de clasificación primero.';
+            'Aún no hay equipos clasificados. Puntúa las pruebas de clasificación primero.';
         return;
     }
 
@@ -1540,14 +1512,15 @@ function renderRuletaEquipos() {
         ruletaSeleccionarBtn.disabled = true;
         ruletaSeleccionarBtn.textContent = 'Orden fijado';
         const primero = equipos.find(e => e.id === ruletaOrdenTurnos[0]);
-        const vuelta  = ordenGlobalOffset > 0 ? ` (rotación ${ordenGlobalOffset})` : '';
+        const offset  = ruletaEquiposPermitidos !== null ? ordenGlobalFinalOffset : ordenGlobalOffset;
+        const vuelta  = offset > 0 ? ` (rotación ${offset})` : '';
         ruletaSelectorEstado.textContent = `Empieza: ${primero ? escapar(primero.nombre) : '—'}${vuelta}`;
     } else {
         ruletaSeleccionarBtn.disabled = false;
         ruletaSeleccionarBtn.textContent = 'Seleccionar equipo';
         if (ruletaEquiposPermitidos !== null) {
-            const nombres = equiposActivos.map(e => escapar(e.nombre)).join(' y ');
-            ruletaSelectorEstado.textContent = `Finalistas: ${nombres}. Selecciona el orden de participación.`;
+            ruletaSelectorEstado.textContent =
+                `${equiposActivos.length} finalista${equiposActivos.length !== 1 ? 's' : ''}. Pulsa para sortear el orden de participación.`;
         } else {
             ruletaSelectorEstado.textContent =
                 `${equiposActivos.length} equipo${equiposActivos.length !== 1 ? 's' : ''} disponible${equiposActivos.length !== 1 ? 's' : ''}. Pulsa para sortear el orden.`;
@@ -1561,7 +1534,7 @@ function seleccionarEquipoRuleta() {
 
     const equiposActivos = esFinal
         ? equipos.filter(e => ruletaEquiposPermitidos.includes(e.id))
-        : equiposDeSalaYRonda(salaSorteoActual, rondaSorteoActual);
+        : equiposDeSalaYRonda(salaSorteoActual);
 
     if (equiposActivos.length === 0) return;
 
@@ -1579,31 +1552,21 @@ function seleccionarEquipoRuleta() {
         return;
     }
 
-    // Para fase final con solo 2 equipos se mantiene el flujo original
     if (esFinal) {
-        const restantes = equiposActivos.filter(e => !ruletaEquiposSeleccionados.includes(e.id));
-        if (restantes.length === 0) return;
-        const eq   = restantes[Math.floor(Math.random() * restantes.length)];
-        const chip = ruletaEquiposGrid.querySelector(`.hazme-equipo-chip[data-id="${eq.id}"]`);
-        if (chip) { chip.classList.remove('iluminado'); chip.classList.add('iluminado'); }
-        ruletaSeleccionarBtn.disabled = true;
-        hazmePopupNombre.textContent = eq.nombre;
-        hazmePopupCuenta.textContent = '5';
-        hazmePopup.classList.remove('hidden');
-        let cuenta = 5;
-        clearInterval(ruletaCuentaInterval);
-        ruletaCuentaInterval = setInterval(() => {
-            cuenta--;
-            hazmePopupCuenta.textContent = cuenta;
-            if (cuenta <= 0) {
-                clearInterval(ruletaCuentaInterval);
-                ruletaCuentaInterval = null;
-                hazmePopup.classList.add('hidden');
-                if (chip) { chip.classList.remove('iluminado'); chip.classList.add('seleccionado'); }
-                ruletaEquiposSeleccionados.push(eq.id);
-                renderRuletaEquipos();
-            }
-        }, 1000);
+        const inicio = Math.floor(Math.random() * equiposActivos.length);
+        const ordenCalculado = [
+            ...equiposActivos.slice(inicio),
+            ...equiposActivos.slice(0, inicio)
+        ].map(e => e.id);
+        const primerEquipo = equiposActivos[inicio];
+        mostrarPopupSorteoOrden(primerEquipo.nombre, () => {
+            ruletaOrdenTurnos          = ordenCalculado;
+            ordenGlobalFinalTurnos     = [...ordenCalculado];
+            ordenGlobalFinalOffset     = 0;
+            pruebaConOrden             = pruebaSelect ? pruebaSelect.value : null;
+            ruletaEquiposSeleccionados = [...ordenCalculado];
+            renderRuletaEquipos();
+        });
         return;
     }
 
@@ -2065,6 +2028,10 @@ function montarDuelo() {
     dueloArgumentar.addEventListener('click', iniciarDueloArgumentar);
     dueloPausar.addEventListener('click',     pausarDuelo);
     dueloReset.addEventListener('click',      resetCronometroDuelo);
+    $('duelo-sig-equipo-btn').addEventListener('click', () => {
+        ocultarCronoGigante();
+        cerrarCronoOverlay();
+    });
 }
 
 function mostrarEleccionDuelo(resultado) {
@@ -2369,12 +2336,21 @@ function montarPalabraCaliente() {
     palabraIniciarBtn.addEventListener('click', iniciarPalabraCaliente);
     palabraPausarBtn.addEventListener('click',  pausarPalabraCaliente);
     palabraResetBtn.addEventListener('click',   resetPalabraCaliente);
+    $('palabra-sig-equipo-btn').addEventListener('click', () => {
+        ocultarCronoGigante();
+        cerrarCronoOverlay();
+        seleccionarEquipoRuleta();
+    });
 }
 
 function pintarPalabraCaliente(ms) {
     const seg = Math.max(0, Math.ceil(ms / 1000));
     palabraCuentaDisplayEl.textContent = `0:${seg.toString().padStart(2, '0')}`;
-    palabraCuentaDisplayEl.classList.toggle('crono-urgente', ms <= 5000);
+    const urgente = ms <= 5000;
+    palabraCuentaDisplayEl.classList.toggle('crono-urgente', urgente);
+    const esB = !palabraEnPrep && palabraTurnoIdx % 2 !== 0;
+    const gigante = $('crono-gigante');
+    if (gigante) gigante.classList.toggle('palabraB-urgente', urgente && esB);
 }
 
 function iniciarPalabraCaliente() {
@@ -2471,6 +2447,10 @@ function terminarPalabraCaliente() {
     bip(660);
     setTimeout(() => bip(660), 350);
     palabraCronoEstado.textContent = '¡Las 6 intervenciones han concluido!';
+    const gigante = $('crono-gigante');
+    if (gigante) { gigante.classList.remove('turno-a', 'turno-b', 'turno-prep', 'palabraB-urgente'); }
+    const sigBtn = $('palabra-sig-equipo-btn');
+    if (sigBtn) sigBtn.classList.remove('hidden');
 
     const popupEquipoEl = document.querySelector('.hazme-popup-equipo');
     if (popupEquipoEl) popupEquipoEl.textContent = '¡Tiempo agotado!';
@@ -2508,15 +2488,21 @@ function resetPalabraCaliente() {
     palabraIniciarBtn.disabled = false;
     palabraPausarBtn.disabled  = true;
     palabraCronoEstado.textContent = 'Pulsa Iniciar para comenzar la preparación (15 s).';
+    const sigBtn = $('palabra-sig-equipo-btn');
+    if (sigBtn) sigBtn.classList.add('hidden');
 }
 
 function renderTurnoPalabra() {
+    const gigante      = $('crono-gigante');
+    const giganteLabel = $('crono-gigante-label');
     if (palabraEnPrep) {
         palabraTurnoDisplayEl.classList.remove('turno-a', 'turno-b');
         palabraTurnoDisplayEl.classList.add('turno-prep');
         palabraParticipanteLabel.textContent = 'Preparación';
         palabraTurnoInfoEl.textContent       = '15 segundos';
         palabraCuentaDisplayEl.classList.remove('crono-urgente');
+        if (gigante) { gigante.classList.remove('turno-a', 'turno-b', 'palabraB-urgente'); gigante.classList.add('turno-prep'); }
+        if (giganteLabel) giganteLabel.textContent = 'Preparación';
         return;
     }
     palabraTurnoDisplayEl.classList.remove('turno-prep');
@@ -2526,6 +2512,12 @@ function renderTurnoPalabra() {
     palabraParticipanteLabel.textContent = esA ? 'Participante A' : 'Participante B';
     palabraTurnoInfoEl.textContent = `Turno ${palabraTurnoIdx + 1} de ${PALABRA_TURNOS}`;
     palabraCuentaDisplayEl.classList.remove('crono-urgente');
+    if (gigante) {
+        gigante.classList.remove('turno-prep', 'palabraB-urgente');
+        gigante.classList.toggle('turno-a',  esA);
+        gigante.classList.toggle('turno-b', !esA);
+    }
+    if (giganteLabel) giganteLabel.textContent = esA ? 'Participante A' : 'Participante B';
 }
 
 function turnoDescripcionPalabra() {
@@ -2591,6 +2583,13 @@ function montarDueloFinal() {
         dueloFinalReplicasA  = 0;
         dueloFinalReplicasB  = 0;
         resetDueloFinalUI();
+    });
+
+    $('duelo-final-sig-enf-btn').addEventListener('click', () => {
+        resetDueloFinal();
+        resetDueloFinalUI();
+        dueloFinalPanel.classList.add('hidden');
+        dueloFinalAsignarDiv.classList.remove('hidden');
     });
 }
 function mostrarAsignacionFinalDuelo(resultado) {
@@ -3473,7 +3472,6 @@ function montarPuntuacion() {
     $('form-equipo').addEventListener('submit', async e => {
         e.preventDefault();
         const nombre  = $('equipo-nombre').value.trim();
-        const sala    = $('equipo-sala').value.trim();
         const alumnos = [...document.querySelectorAll('.alumno-input')]
             .map(i => i.value.trim())
             .filter(a => a);
@@ -3482,7 +3480,7 @@ function montarPuntuacion() {
             alert('Elige un colegio y rellena al menos los 3 primeros alumnos.');
             return;
         }
-        const nuevoEquipo = { id: 'eq_' + Date.now(), nombre, sala, alumnos };
+        const nuevoEquipo = { id: 'eq_' + Date.now(), nombre, alumnos };
         try {
             const resp = await fetch('/api/equipos', {
                 method: 'POST',
@@ -3507,7 +3505,8 @@ function montarPuntuacion() {
         actualizarVistaPorAviso('', $('punt-prueba').value);
     };
 
-    $('punt-sala').addEventListener('change',   _resetForm);
+    $('punt-ronda').addEventListener('change', () => { actualizarEquiposPuntuacion(); _resetForm(); });
+    if ($('punt-sala')) $('punt-sala').addEventListener('change', () => { actualizarEquiposPuntuacion(); _resetForm(); });
     $('punt-equipo').addEventListener('change', () => { _resetForm(); actualizarSelectorAlumnos(); });
     $('punt-alumno').addEventListener('change', _resetForm);
     $('guardar-puntuacion').addEventListener('click', guardarPuntuacion);
@@ -3547,16 +3546,7 @@ function poblarColegiosFijos() {
 }
 
 
-function actualizarContadoresSala() {
-    const salas = { 'Auditorio': 0, 'Ludoteca': 0, 'Poli 2': 0 };
-    equipos.forEach(eq => { if (salas[eq.sala] !== undefined) salas[eq.sala]++; });
-    $('num-auditorio').textContent = salas['Auditorio'];
-    $('num-ludoteca').textContent  = salas['Ludoteca'];
-    $('num-poli2').textContent     = salas['Poli 2'];
-}
-
 function renderEquipos() {
-    actualizarContadoresSala();
     const cont = $('equipos-lista');
     if (equipos.length === 0) {
         cont.innerHTML = '<p class="ayuda">No hay equipos registrados todavía.</p>';
@@ -3567,7 +3557,7 @@ function renderEquipos() {
         return `
             <div class="equipo-card">
                 <div class="equipo-info">
-                    <h4>${escapar(eq.nombre)}${eq.sala ? ` <span class="equipo-sala-tag">${escapar(eq.sala)}</span>` : ''}</h4>
+                    <h4>${escapar(eq.nombre)}${eq.sala ? ` <span class="equipo-sala-tag">R1: ${escapar(eq.sala)}</span>` : ''}${eq.sala_r2 ? ` <span class="equipo-sala-tag">R2: ${escapar(eq.sala_r2)}</span>` : ''}</h4>
                     <div class="equipo-alumnos">${eq.alumnos.map(escapar).join(' · ')}</div>
                 </div>
                 <div class="equipo-puntos">${total} pts</div>
@@ -3598,12 +3588,114 @@ function renderEquipos() {
     });
 }
 
+/* 14b) AGRUPACIÓN — asignar sala y ronda a cada equipo */
+
+const AGRUP_COMBOS = [
+    { campo: 'sala',    ronda: '1', id: 'agrup-lista-auditorio-1', sala: 'Auditorio' },
+    { campo: 'sala',    ronda: '1', id: 'agrup-lista-ludoteca-1',  sala: 'Ludoteca'  },
+    { campo: 'sala',    ronda: '1', id: 'agrup-lista-poli2-1',     sala: 'Poli 2'    },
+    { campo: 'sala_r2', ronda: '2', id: 'agrup-lista-auditorio-2', sala: 'Auditorio' },
+    { campo: 'sala_r2', ronda: '2', id: 'agrup-lista-ludoteca-2',  sala: 'Ludoteca'  },
+    { campo: 'sala_r2', ronda: '2', id: 'agrup-lista-poli2-2',     sala: 'Poli 2'    },
+];
+
+function salaOpts(valorActual) {
+    return ['Auditorio', 'Ludoteca', 'Poli 2']
+        .map(s => `<option value="${s}"${valorActual === s ? ' selected' : ''}>${s}</option>`)
+        .join('');
+}
+
+function renderListasPorSala() {
+    AGRUP_COMBOS.forEach(({ campo, sala, id }) => {
+        const cont = $(id);
+        if (!cont) return;
+        const eqs = equipos.filter(eq => eq[campo] === sala);
+        cont.innerHTML = eqs.length
+            ? eqs.map(eq => `<div class="agrup-sala-item">${escapar(eq.nombre)}</div>`).join('')
+            : '<p class="agrup-sala-vacio">—</p>';
+    });
+}
+
+function renderAgrupacion() {
+    renderListasPorSala();
+    const cont = $('agrupacion-lista');
+    if (!cont) return;
+    if (equipos.length === 0) {
+        cont.innerHTML = '<p class="ayuda">No hay equipos registrados todavía.</p>';
+        return;
+    }
+    cont.innerHTML = equipos.map(eq => `
+        <div class="agrupacion-fila" data-id="${eq.id}">
+            <span class="agrupacion-nombre">${escapar(eq.nombre)}</span>
+            <div class="agrupacion-select-grupo">
+                <span class="agrupacion-select-label">Ronda 1</span>
+                <select class="agrupacion-sala-r1">
+                    <option value="">— Sala —</option>
+                    ${salaOpts(eq.sala)}
+                </select>
+            </div>
+            <div class="agrupacion-select-grupo">
+                <span class="agrupacion-select-label">Ronda 2</span>
+                <select class="agrupacion-sala-r2">
+                    <option value="">— Sala —</option>
+                    ${salaOpts(eq.sala_r2)}
+                </select>
+            </div>
+        </div>`).join('');
+
+    cont.querySelectorAll('.agrupacion-fila').forEach(fila => {
+        const id   = fila.dataset.id;
+        const selR1 = fila.querySelector('.agrupacion-sala-r1');
+        const selR2 = fila.querySelector('.agrupacion-sala-r2');
+        selR1.addEventListener('change', () => actualizarSalaRondaEquipo(id, selR1.value, selR2.value));
+        selR2.addEventListener('change', () => actualizarSalaRondaEquipo(id, selR1.value, selR2.value));
+    });
+}
+
+async function actualizarSalaRondaEquipo(id, sala, sala_r2) {
+    const eq = equipos.find(e => e.id === id);
+    if (!eq) return;
+    try {
+        const resp = await fetch('/api/equipos/editar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, nombre: eq.nombre, sala, sala_r2, alumnos: eq.alumnos })
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        aplicarDatosServidor(await resp.json());
+    } catch (err) {
+        console.error('[API] Error actualizando sala del equipo:', err);
+        mostrarEstadoServidor('✗ Error al guardar. Comprueba que el servidor está arrancado.', true);
+        return;
+    }
+    renderListasPorSala();
+    renderEquipos();
+}
+
+function actualizarEquiposPuntuacion() {
+    const ronda   = $('punt-ronda') ? $('punt-ronda').value : '';
+    const salaSel = $('punt-sala')  ? $('punt-sala').value  : '';
+    let filtrados;
+    if (salaSel && ronda) {
+        const campo = ronda === '2' ? 'sala_r2' : 'sala';
+        filtrados = equipos.filter(e => e[campo] === salaSel);
+    } else if (salaSel) {
+        filtrados = equipos.filter(e => e.sala === salaSel || e.sala_r2 === salaSel);
+    } else {
+        filtrados = equipos;
+    }
+    if (!filtrados.length) filtrados = equipos;
+    const opts = filtrados.map(e => `<option value="${e.id}">${escapar(e.nombre)}</option>`).join('');
+    $('punt-equipo').innerHTML = '<option value="">— elige —</option>' + opts;
+    $('punt-equipo').value = '';
+    actualizarSelectorAlumnos();
+}
+
 function refrescarSelectoresEquipos() {
     poblarSelectDescarga();
     const opcionesEquipos = equipos.map(e => `<option value="${e.id}">${escapar(e.nombre)}</option>`).join('');
-    $('punt-equipo').innerHTML    = '<option value="">— elige —</option>' + opcionesEquipos;
     $('detalle-equipo').innerHTML = '<option value="">Todos los equipos</option>' + opcionesEquipos;
-    actualizarSelectorAlumnos();
+    actualizarEquiposPuntuacion();
     if (!hazmeFanSection.classList.contains('hidden'))      renderHazmeEquipos();
     if (!ruletaEquiposSelector.classList.contains('hidden')) renderRuletaEquipos();
 }
@@ -3738,7 +3830,6 @@ function actualizarVistaPorAviso(aviso, prueba) {
 }
 
 async function guardarPuntuacion() {
-    const sala      = $('punt-sala').value;
     const equipoId  = $('punt-equipo').value;
     const alumnoVal = $('punt-alumno').value;
     const prueba    = $('punt-prueba').value;
@@ -3780,7 +3871,6 @@ async function guardarPuntuacion() {
         alumnoIdx,
         alumnoNombreOtro,
         prueba,
-        sala,
         ronda: $('punt-ronda').value || null,
         criterios: { ...rubricaActual },
         total,
@@ -3819,10 +3909,6 @@ function irAPuntuar(prueba) {
         $('punt-prueba').value = prueba;
         limpiarRubrica();
         renderRubrica(prueba);
-    }
-    if (salaSorteoActual) {
-        const salaIdx = SALAS_ORDEN.indexOf(salaSorteoActual) + 1;
-        if (salaIdx > 0) $('punt-sala').value = String(salaIdx);
     }
     sincronizarRondaEnPuntuacion();
 }
@@ -3959,15 +4045,11 @@ async function descargarClasificacionCSV(eq) {
         { id: 'duelo-personajes-final', label: 'Final 3 — Duelo Final' },
         { id: 'minuto-oro',             label: 'Final 4 — Minuto de Oro' },
     ];
-    const CLASIF = ['hazme-fan','fabrica-historias','voces-derecho','duelo-personajes'];
-    const FINAL  = ['declamacion','palabra-caliente','duelo-personajes-final','minuto-oro'];
-
     const puntsEq     = puntuaciones.filter(p => p.equipoId === eq.id);
-    const totalClasif = puntsEq.filter(p => CLASIF.includes(p.prueba)).reduce((s,p) => s+p.total, 0);
-    const totalFinal  = puntsEq.filter(p => FINAL.includes(p.prueba)).reduce((s,p) => s+p.total, 0);
+    const totalClasif = puntsEq.filter(p => FASE_CLASIFICACION.includes(p.prueba)).reduce((s,p) => s+p.total, 0);
+    const totalFinal  = puntsEq.filter(p => FASE_FINAL.includes(p.prueba)).reduce((s,p) => s+p.total, 0);
     const totalGen    = puntsEq.reduce((s,p) => s+p.total, 0);
 
-    // Paleta
     const NAVY  = { argb: 'FF0D2B55' };
     const BLUE  = { argb: 'FF1A6FC4' };
     const LBLUE = { argb: 'FF3A9BD5' };
@@ -4019,7 +4101,7 @@ async function descargarClasificacionCSV(eq) {
 
     ws.mergeCells('B2:H2');
     const c2 = ws.getCell('B2');
-    c2.value = 'II Torneo de Oratoria de Chamberí';
+    c2.value = CONFIG.nombreCompleto;
     c2.font  = { size: 11, color: BLUE, name: 'Arial' };
     c2.fill  = { type:'pattern', pattern:'solid', fgColor: WHITE };
     c2.alignment = { vertical: 'middle', horizontal: 'left', indent: 2 };
@@ -4265,6 +4347,370 @@ function ocultarCronoGigante() {
     _giganteBotonesEl     = null;
     _giganteBotonesParent = null;
     const popup = $('crono-gigante');
-    popup.classList.remove('modo-estrella');
+    popup.classList.remove('modo-estrella', 'turno-a', 'turno-b', 'turno-prep', 'palabraB-urgente');
     popup.classList.add('hidden');
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Dashboard de Base de Datos
+   ══════════════════════════════════════════════════════════════ */
+
+const PRUEBAS_LABEL_DB = {
+    'hazme-fan':              'Hazme Fan',
+    'fabrica-historias':      'Fábrica Historias',
+    'voces-derecho':          'Voces Derecho',
+    'duelo-personajes':       'Duelo Personajes',
+    'declamacion':            'Declamación',
+    'palabra-caliente':       'Palabra Caliente',
+    'duelo-personajes-final': 'Duelo Final',
+    'minuto-oro':             'Minuto de Oro',
+};
+
+const DB_PASS = 'oratoria2026';
+let _dbDesbloqueado = false;
+let _dbTabActiva = 'equipos';
+
+function abrirDashboardDB() {
+    if (_dbDesbloqueado) {
+        $('db-dashboard-modal').classList.remove('hidden');
+        _renderTablaDB();
+    } else {
+        $('db-pass-modal').classList.remove('hidden');
+        setTimeout(() => $('db-pass-input').focus(), 50);
+    }
+}
+
+function cerrarDashboardDB() {
+    $('db-dashboard-modal').classList.add('hidden');
+}
+
+async function _renderTablaDB() {
+    const cont = $('db-dashboard-contenido');
+    if (_dbTabActiva === 'inscripciones')  await _renderTablaInscripciones(cont);
+    else if (_dbTabActiva === 'equipos')   _renderTablaEquipos(cont);
+    else                                   _renderTablaPuntuaciones(cont);
+}
+
+async function _renderTablaInscripciones(cont, listaPreCargada) {
+    let lista;
+    if (listaPreCargada) {
+        lista = listaPreCargada;
+    } else {
+        cont.innerHTML = '<p class="db-empty">Cargando preinscripciones…</p>';
+        try {
+            const resp = await fetch('/api/inscripciones');
+            lista = await resp.json();
+            if (lista.error) throw new Error(lista.error);
+        } catch (err) {
+            cont.innerHTML = `<p class="db-empty" style="color:#e53935">Error al cargar: ${err.message}</p>`;
+            return;
+        }
+    }
+
+    if (!lista.length) {
+        cont.innerHTML = '<p class="db-empty">No hay preinscripciones recibidas todavía.</p>';
+        return;
+    }
+
+    const filas = lista.map(ins => {
+        const eqs        = Array.isArray(ins.equipos) ? ins.equipos : [];
+        const totalAlum  = eqs.reduce((s, eq) => s + (Array.isArray(eq.alumnos) ? eq.alumnos.length : 0), 0);
+        const detalle    = eqs.map(eq => `<div class="db-ins-equipo"><strong>${eq.nombre || '—'}</strong>: ${
+            Array.isArray(eq.alumnos) ? eq.alumnos.map(a => a.nombre).filter(Boolean).join(', ') || '—' : '—'
+        }</div>`).join('');
+        const fecha      = ins.fecha ? ins.fecha.split(' ')[0] : '—';
+        return `<tr>
+            <td><strong>${ins.denominacion || '—'}</strong><div class="db-ins-meta">${ins.localidad || ''}${ins.provincia ? ' · ' + ins.provincia : ''}</div></td>
+            <td>${ins.director || '—'}<div class="db-ins-meta">${ins.correo_centro || ''}</div></td>
+            <td>${ins.telefono_centro || '—'}</td>
+            <td><span class="db-badge-prueba">${eqs.length} equipo${eqs.length !== 1 ? 's' : ''} · ${totalAlum} alumno${totalAlum !== 1 ? 's' : ''}</span><div class="db-ins-detail">${detalle}</div></td>
+            <td>${fecha}</td>
+            <td><button class="db-btn-del" onclick="_borrarInscripcionDB('${ins.id}', '${(ins.denominacion||'').replace(/'/g,"\\'")}')">🗑 Borrar</button></td>
+        </tr>`;
+    }).join('');
+
+    cont.innerHTML = `
+        <p style="font-size:.85rem;color:#666;margin-bottom:.75rem;">${lista.length} preinscripción${lista.length !== 1 ? 'es' : ''} recibida${lista.length !== 1 ? 's' : ''}.</p>
+        <div class="db-tabla-wrap">
+            <table class="db-tabla">
+                <thead><tr>
+                    <th>Centro</th><th>Director/a</th><th>Teléfono</th>
+                    <th>Equipos / Alumnos</th><th>Fecha</th><th style="width:80px">Borrar</th>
+                </tr></thead>
+                <tbody>${filas}</tbody>
+            </table>
+        </div>`;
+}
+
+async function _borrarInscripcionDB(id, centro) {
+    if (!confirm(`¿Borrar la preinscripción de "${centro}"? Esta acción no se puede deshacer.`)) return;
+    try {
+        const resp  = await fetch('/api/inscripciones/borrar', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ id }),
+        });
+        const lista = await resp.json();
+        if (lista.error) throw new Error(lista.error);
+        await _renderTablaInscripciones($('db-dashboard-contenido'), lista);
+    } catch (err) {
+        alert('Error al borrar: ' + err.message);
+    }
+}
+
+function _renderTablaEquipos(cont) {
+    if (!equipos.length) {
+        cont.innerHTML = '<p class="db-empty">No hay equipos registrados en la base de datos.</p>';
+        return;
+    }
+    const filas = equipos.map(eq => {
+        const alumnos = Array.isArray(eq.alumnos) ? eq.alumnos.filter(Boolean) : [];
+        const safeNombre = (eq.nombre || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `<tr data-id="${eq.id}">
+            <td>${eq.nombre || '—'}</td>
+            <td>${eq.sala || '—'}</td>
+            <td>${alumnos.join(', ') || '—'}</td>
+            <td>
+                <button class="db-btn-edit" onclick="_editarEquipoDB('${eq.id}')">✏ Editar</button>
+                <button class="db-btn-del"  onclick="_borrarEquipoDB('${eq.id}', '${safeNombre}')">🗑 Borrar</button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    cont.innerHTML = `
+        <div class="db-tabla-wrap">
+            <table class="db-tabla">
+                <thead><tr>
+                    <th>Nombre del equipo</th>
+                    <th>Sala</th>
+                    <th>Alumnos</th>
+                    <th style="width:160px">Acciones</th>
+                </tr></thead>
+                <tbody id="db-equipos-tbody">${filas}</tbody>
+            </table>
+        </div>`;
+}
+
+function _renderTablaPuntuaciones(cont) {
+    if (!puntuaciones.length) {
+        cont.innerHTML = '<p class="db-empty">No hay puntuaciones registradas en la base de datos.</p>';
+        return;
+    }
+    const filas = puntuaciones.map(p => {
+        const eq = equipos.find(e => e.id === p.equipoId);
+        const nombreEq = eq ? eq.nombre : p.equipoId;
+        const alumno   = p.alumnoNombreOtro || (eq && Array.isArray(eq.alumnos) && eq.alumnos[p.alumnoIdx]) || `Alumno ${(p.alumnoIdx || 0) + 1}`;
+        const sala     = { '1': 'Auditorio', '2': 'Ludoteca', '3': 'Poli 2', 'Auditorio': 'Auditorio', 'Ludoteca': 'Ludoteca', 'Poli 2': 'Poli 2' }[p.sala] || (p.sala || '—');
+        const label    = PRUEBAS_LABEL_DB[p.prueba] || p.prueba;
+        return `<tr data-id="${p.id}">
+            <td>${nombreEq}</td>
+            <td>${alumno}</td>
+            <td><span class="db-badge-prueba">${label}</span></td>
+            <td>${sala}</td>
+            <td>${p.ronda || '—'}</td>
+            <td class="db-pts">${p.total}</td>
+            <td>${p.aviso ? `<span class="db-badge-aviso">${p.aviso}</span>` : '—'}</td>
+            <td><button class="db-btn-del" onclick="_borrarPuntuacionDB('${p.id}')">🗑 Borrar</button></td>
+        </tr>`;
+    }).join('');
+
+    cont.innerHTML = `
+        <div class="db-tabla-wrap">
+            <table class="db-tabla">
+                <thead><tr>
+                    <th>Equipo</th>
+                    <th>Alumno</th>
+                    <th>Prueba</th>
+                    <th>Sala</th>
+                    <th>Ronda</th>
+                    <th>Total</th>
+                    <th>Aviso</th>
+                    <th style="width:80px">Borrar</th>
+                </tr></thead>
+                <tbody>${filas}</tbody>
+            </table>
+        </div>`;
+}
+
+function _editarEquipoDB(id) {
+    const eq = equipos.find(e => e.id === id);
+    if (!eq) return;
+    const alumnos = Array.isArray(eq.alumnos) ? [...eq.alumnos] : [];
+    while (alumnos.length < 6) alumnos.push('');
+
+    const tbody = $('db-equipos-tbody');
+    const fila  = tbody ? tbody.querySelector(`tr[data-id="${id}"]`) : null;
+    if (!fila) return;
+
+    fila.classList.add('db-edit-row');
+    fila.innerHTML = `
+        <td><input class="db-edit-input" id="dbedit-nombre" value="${(eq.nombre || '').replace(/"/g,'&quot;')}"></td>
+        <td>
+            <select class="db-edit-select" id="dbedit-sala">
+                <option value="">— Sin sala —</option>
+                ${['Auditorio','Ludoteca','Poli 2'].map(s => `<option value="${s}"${eq.sala===s?' selected':''}>${s}</option>`).join('')}
+            </select>
+        </td>
+        <td>
+            <div class="db-alumnos-list">
+                ${alumnos.map((a, i) => `<input value="${(a||'').replace(/"/g,'&quot;')}" id="dbedit-alu-${i}" placeholder="Alumno ${i+1}">`).join('')}
+            </div>
+        </td>
+        <td>
+            <button class="db-btn-save"   onclick="_guardarEdicionEquipoDB('${id}')">✓ Guardar</button>
+            <button class="db-btn-cancel" onclick="_renderTablaDB()">✕ Cancelar</button>
+        </td>`;
+}
+
+async function _guardarEdicionEquipoDB(id) {
+    const nombre = ($('dbedit-nombre') || {}).value?.trim();
+    const sala   = ($('dbedit-sala')   || {}).value || '';
+    if (!nombre) { alert('El nombre del equipo no puede estar vacío.'); return; }
+
+    const alumnos = [];
+    for (let i = 0; i < 6; i++) {
+        const v = ($(`dbedit-alu-${i}`) || {}).value?.trim() || '';
+        if (v) alumnos.push(v);
+    }
+
+    try {
+        const resp  = await fetch('/api/equipos/editar', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ id, nombre, sala, alumnos }),
+        });
+        const datos = await resp.json();
+        if (datos.error) throw new Error(datos.error);
+        equipos      = datos.equipos;
+        puntuaciones = datos.puntuaciones;
+        renderEquipos();
+        refrescarSelectoresEquipos();
+        _renderTablaDB();
+    } catch (err) {
+        alert('Error al guardar: ' + err.message);
+    }
+}
+
+async function _borrarEquipoDB(id, nombre) {
+    if (!confirm(`¿Borrar el equipo "${nombre}"?\nSe eliminarán también todas sus puntuaciones.`)) return;
+    try {
+        const resp  = await fetch('/api/equipos/borrar', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ id }),
+        });
+        const datos = await resp.json();
+        if (datos.error) throw new Error(datos.error);
+        equipos      = datos.equipos;
+        puntuaciones = datos.puntuaciones;
+        renderEquipos();
+        refrescarSelectoresEquipos();
+        _renderTablaDB();
+    } catch (err) {
+        alert('Error al borrar: ' + err.message);
+    }
+}
+
+async function _borrarPuntuacionDB(id) {
+    if (!confirm('¿Borrar esta puntuación? Esta acción no se puede deshacer.')) return;
+    try {
+        const resp  = await fetch('/api/puntuaciones/borrar', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ id }),
+        });
+        const datos = await resp.json();
+        if (datos.error) throw new Error(datos.error);
+        equipos      = datos.equipos;
+        puntuaciones = datos.puntuaciones;
+        _renderTablaDB();
+    } catch (err) {
+        alert('Error al borrar: ' + err.message);
+    }
+}
+
+
+// Inicialización de los listeners del dashboard
+(function initDashboardDB() {
+    function setup() {
+        // ── Botón de apertura ──
+        const btnAbrir  = $('btn-db-dashboard');
+        const btnCerrar = $('db-dashboard-cerrar');
+        const overlay   = $('db-dashboard-modal');
+        if (btnAbrir)  btnAbrir.addEventListener('click', abrirDashboardDB);
+        if (btnCerrar) btnCerrar.addEventListener('click', cerrarDashboardDB);
+        if (overlay)   overlay.addEventListener('click', e => { if (e.target === overlay) cerrarDashboardDB(); });
+
+        // ── Modal de contraseña ──
+        const passModal    = $('db-pass-modal');
+        const passInput    = $('db-pass-input');
+        const passError    = $('db-pass-error');
+        const passCancelar = $('db-pass-cancelar');
+        const passConfirmar= $('db-pass-confirmar');
+
+        function cerrarPassModal() {
+            passModal.classList.add('hidden');
+            passInput.value = '';
+            passError.classList.add('hidden');
+        }
+        function intentarPass() {
+            if (passInput.value === DB_PASS) {
+                _dbDesbloqueado = true;
+                cerrarPassModal();
+                $('db-dashboard-modal').classList.remove('hidden');
+                _renderTablaDB();
+            } else {
+                passError.classList.remove('hidden');
+                passInput.value = '';
+                passInput.focus();
+            }
+        }
+        if (passCancelar)  passCancelar.addEventListener('click', cerrarPassModal);
+        if (passConfirmar) passConfirmar.addEventListener('click', intentarPass);
+        if (passInput)     passInput.addEventListener('keydown', e => { if (e.key === 'Enter') intentarPass(); });
+        if (passModal)     passModal.addEventListener('click', e => { if (e.target === passModal) cerrarPassModal(); });
+
+        // ── Tabs del dashboard ──
+        document.querySelectorAll('.db-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.db-tab').forEach(b => b.classList.remove('db-tab-activa'));
+                btn.classList.add('db-tab-activa');
+                _dbTabActiva = btn.dataset.tabla;
+                _renderTablaDB();
+            });
+        });
+
+        // ── Botón enlace formulario ──
+        const btnEnlaceForm = $('btn-enlace-formulario');
+        const popupEnlace   = $('enlace-form-popup');
+        if (btnEnlaceForm && popupEnlace) {
+            btnEnlaceForm.addEventListener('click', async e => {
+                e.stopPropagation();
+                let url;
+                try {
+                    const resp = await fetch('/api/mi-ip');
+                    const data = await resp.json();
+                    url = data.baseUrl + '/formulario';
+                } catch {
+                    url = window.location.origin + '/formulario';
+                }
+                $('enlace-form-url-txt').textContent = url;
+                $('enlace-form-abrir').href = url;
+                popupEnlace.classList.toggle('hidden');
+            });
+            popupEnlace.addEventListener('click', e => e.stopPropagation());
+            document.addEventListener('click', () => popupEnlace.classList.add('hidden'));
+        }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup);
+    else setup();
+})();
+
+window._copiarEnlaceForm = function () {
+    const txt = $('enlace-form-url-txt')?.textContent;
+    if (!txt) return;
+    navigator.clipboard.writeText(txt).then(() => {
+        const btn = document.querySelector('.btn-copiar-enlace');
+        if (btn) { btn.textContent = '✓ Copiado'; setTimeout(() => btn.textContent = 'Copiar', 1500); }
+    }).catch(() => {});
+};

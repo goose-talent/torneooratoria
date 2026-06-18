@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
 
     <!-- Cabecera , decoraciones y navegación por las distintas pestañas. -->
 </head>
@@ -16,18 +17,19 @@
     <header>
         <div class="header-contenido">
             <img src="img/logo.png" alt="logo de la empresa" class="logo logo-empresa">
-            <h1>II Concurso de Oratoria Escolar</h1>
+            <h1 id="cfg-titulo">II Concurso de Oratoria Escolar</h1>
             <div class="info-evento">
                 <span class="chip"> Fase clasificacion</span>
-                <span class="chip-fecha"> 28 de mayo 09:00-14:00</span>
-                <span class="chip-lugar">Centro Cultural Galileo</span>
+                <span class="chip-fecha" id="cfg-fecha"> 28 de mayo 09:00-14:00</span>
+                <span class="chip-lugar" id="cfg-lugar">Centro Cultural Galileo</span>
             </div>
         </div>
     </header>
 
     <nav class="tabs" role="tablist">
-        <button class="tab tab-activa" data-modo="sorteos" role="tab">Sorteos de pruebas</button>
+        <button class="tab tab-activa" data-modo="sorteos" r ole="tab">Sorteos de pruebas</button>
         <button class="tab" data-modo="equipos" role="tab">Administración de equipos</button>
+        <button class="tab" data-modo="agrupacion" role="tab">Agrupación</button>
         <button class="tab" data-modo="puntuacion" role="tab">Puntuación</button>
         <button class="tab" data-modo="ranking" role="tab">Clasificación</button>
     </nav>
@@ -50,15 +52,6 @@
                                     <option value="Auditorio">Auditorio</option>
                                     <option value="Ludoteca">Ludoteca</option>
                                     <option value="Poli 2">Poli 2</option>
-                                </select>
-                            </div>
-                            <div class="campo">
-                                <label for="sorteo-turno-select">Turno</label>
-                                <select id="sorteo-turno-select">
-                                    <option value="">— Turno —</option>
-                                    <option value="1">Turno 1</option>
-                                    <option value="2">Turno 2</option>
-                                    <option value="3">Turno 3</option>
                                 </select>
                             </div>
                             <div class="campo">
@@ -116,7 +109,7 @@
                     <div id="final-emparejamiento-panel" class="tarjeta hidden">
                         <h2>Sorteo de enfrentamientos y oradores</h2>
                         <p class="ayuda" id="final-emparejar-desc">Pulsa el botón para sortear los grupos y sus oradores.</p>
-                        <button id="final-emparejar-btn" class="btn btn-primario">Sortear</button>
+                        <button id="final-emparejar-btn" class="btn btn-sorteo-enfrentamiento">🎲 Sortear enfrentamientos</button>
                         <div id="final-emparejamiento-resultado" class="emp-resultado hidden">
                             <div class="emp-bloque">
                                 <div class="emp-titulo" id="final-enf1-titulo">Pareja 1</div>
@@ -345,6 +338,7 @@
                                 <button id="duelo-reset"      class="btn btn-fantasma">Reiniciar</button>
                             </div>
                             <div id="duelo-estado" class="crono-estado">Pulsa "Iniciar preparación" cuando los participantes estén listos.</div>
+                            <button id="duelo-sig-equipo-btn" class="btn btn-sig-equipo">🔁 Sortear para el siguiente equipo</button>
                         </div>
 
     <!-- VOCES DE DERECHO -->
@@ -444,6 +438,7 @@
                             <button id="duelo-final-reset"           class="btn btn-fantasma">Reiniciar</button>
                         </div>
                         <div id="duelo-final-estado" class="crono-estado">Sortea los equipos y pulsa "Iniciar preparación".</div>
+                        <button id="duelo-final-sig-enf-btn" class="btn btn-sig-equipo">🔁 Siguiente enfrentamiento</button>
 
                         <!-- Tabla de réplicas: un palito por réplica completada. Solo visible en la fase de réplicas. -->
                         <div id="duelo-final-replicas-tabla" class="duelo-final-replicas-tabla hidden">
@@ -477,6 +472,7 @@
                             <button id="palabra-reset-crono"   class="btn btn-fantasma">Reiniciar</button>
                         </div>
                         <div id="palabra-crono-estado" class="crono-estado">Pulsa Iniciar cuando los participantes estén listos.</div>
+                        <button id="palabra-sig-equipo-btn" class="btn btn-sig-equipo hidden">🔁 Sortear siguiente equipo</button>
 
                         <!-- Tabla de palitos (tachado): un trazo vertical por cada
                              intervención completada. Se añaden automáticamente. -->
@@ -499,7 +495,10 @@
         <section id="modo-equipos" class="modo">
             <div class="contenedor-principal">
                 <section class="tarjeta">
-                    <h2>Equipos del torneo</h2>
+                    <div class="tarjeta-header">
+                        <h2>Equipos del torneo</h2>
+                        <button id="btn-db-dashboard" class="btn-engranaje" title="Gestión de base de datos">⚙</button>
+                    </div>
                     <p class="ayuda">Cada equipo tiene que ser del curso de 5.º o 6.º</p>
 
                     <form id="form-equipo" class="form-equipo">
@@ -536,36 +535,60 @@
                                 <input type="text" class="alumno-input" data-idx="5" placeholder="Nombre y apellido">
                             </div>
                         </div>
-                        <div class="sala-selector-row">
-                            <div class="campo sala-selector-campo">
-                                <label for="equipo-sala">Sala</label>
-                                <select id="equipo-sala">
-                                    <option value="">— Elige una sala —</option>
-                                    <option value="Auditorio">Auditorio</option>
-                                    <option value="Ludoteca">Ludoteca</option>
-                                    <option value="Poli 2">Poli 2</option>
-                                </select>
-                            </div>
-                            <div class="sala-contadores">
-                                <div class="sala-contador" id="contador-auditorio">
-                                    <span class="sala-contador-nombre">Auditorio</span>
-                                    <span class="sala-contador-num" id="num-auditorio">0</span>
-                                </div>
-                                <div class="sala-contador" id="contador-ludoteca">
-                                    <span class="sala-contador-nombre">Ludoteca</span>
-                                    <span class="sala-contador-num" id="num-ludoteca">0</span>
-                                </div>
-                                <div class="sala-contador" id="contador-poli2">
-                                    <span class="sala-contador-nombre">Poli 2</span>
-                                    <span class="sala-contador-num" id="num-poli2">0</span>
-                                </div>
-                            </div>
-                        </div>
                         <button type="submit" class="btn btn-primario">Añadir equipo</button>
                     </form>
 
                     <div id="equipos-lista" class="equipos-lista"></div>
                 </section>
+            </div>
+        </section>
+
+    <!-- Agrupación: asignación de sala y ronda a cada equipo -->
+        <section id="modo-agrupacion" class="modo">
+            <div class="contenedor-principal">
+                <section class="tarjeta">
+                    <h2>Agrupación de equipos</h2>
+                    <p class="ayuda">Asigna a cada equipo su sala y su ronda.</p>
+
+                    <div id="agrupacion-lista" class="agrupacion-lista"></div>
+                </section>
+
+                <aside class="agrupacion-asides">
+                    <div class="agrup-ronda-grupo">
+                        <h3 class="agrup-ronda-titulo">Ronda 1</h3>
+                        <div class="agrup-ronda-salas">
+                            <div class="tarjeta agrup-sala-panel">
+                                <h4>Auditorio</h4>
+                                <div class="agrup-sala-lista" id="agrup-lista-auditorio-1"></div>
+                            </div>
+                            <div class="tarjeta agrup-sala-panel">
+                                <h4>Ludoteca</h4>
+                                <div class="agrup-sala-lista" id="agrup-lista-ludoteca-1"></div>
+                            </div>
+                            <div class="tarjeta agrup-sala-panel">
+                                <h4>Poli 2</h4>
+                                <div class="agrup-sala-lista" id="agrup-lista-poli2-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="agrup-ronda-grupo">
+                        <h3 class="agrup-ronda-titulo">Ronda 2</h3>
+                        <div class="agrup-ronda-salas">
+                            <div class="tarjeta agrup-sala-panel">
+                                <h4>Auditorio</h4>
+                                <div class="agrup-sala-lista" id="agrup-lista-auditorio-2"></div>
+                            </div>
+                            <div class="tarjeta agrup-sala-panel">
+                                <h4>Ludoteca</h4>
+                                <div class="agrup-sala-lista" id="agrup-lista-ludoteca-2"></div>
+                            </div>
+                            <div class="tarjeta agrup-sala-panel">
+                                <h4>Poli 2</h4>
+                                <div class="agrup-sala-lista" id="agrup-lista-poli2-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </section>
 
@@ -589,11 +612,10 @@
                         <div class="campo">
                             <label for="punt-sala">Sala</label>
                             <select id="punt-sala">
-                               <option value="">— elige —</option>
-                               <option value="1">Auditorio</option>
-                               <option value="2">Ludoteca</option>
-                               <option value="3">Poli 2</option>
-
+                                <option value="">— todas —</option>
+                                <option value="Auditorio">Auditorio</option>
+                                <option value="Ludoteca">Ludoteca</option>
+                                <option value="Poli 2">Poli 2</option>
                             </select>
                         </div>
                         <div class="campo">
@@ -881,5 +903,47 @@
 
     <script src="datos-pruebas.js"></script>
     <script src="script.js"></script>
+
+    <!-- Modal contraseña del dashboard BD -->
+    <div id="db-pass-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-caja">
+            <div class="modal-icono">🔒</div>
+            <h3 class="modal-titulo">Acceso al panel de datos</h3>
+            <p class="modal-desc">Introduce la contraseña para gestionar la base de datos.</p>
+            <input type="password" id="db-pass-input" class="modal-input" placeholder="Contraseña" autocomplete="off" />
+            <div id="db-pass-error" class="modal-error hidden">Contraseña incorrecta.</div>
+            <div class="modal-botones">
+                <button id="db-pass-cancelar" class="btn">Cancelar</button>
+                <button id="db-pass-confirmar" class="btn btn-primario">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dashboard Base de Datos -->
+    <div id="db-dashboard-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="db-dashboard-caja">
+            <div class="db-dashboard-header">
+                <h3>⚙ Gestión de la base de datos</h3>
+                <div class="db-header-acciones">
+                    <button id="btn-enlace-formulario" class="btn-enlace-form" title="Ver enlace del formulario de preinscripción">🔗 Formulario</button>
+                    <button id="db-dashboard-cerrar" class="btn-cerrar-db">✕ Cerrar</button>
+                </div>
+            </div>
+            <div id="enlace-form-popup" class="enlace-form-popup hidden">
+                <strong>Enlace del formulario de preinscripción:</strong>
+                <div class="enlace-form-url-row">
+                    <span id="enlace-form-url-txt"></span>
+                    <button class="btn-copiar-enlace" onclick="_copiarEnlaceForm()">Copiar</button>
+                </div>
+                <a id="enlace-form-abrir" href="#" target="_blank" class="enlace-form-abrir">Abrir en nueva pestaña →</a>
+            </div>
+            <div class="db-dashboard-tabs">
+                <button class="db-tab db-tab-activa" data-tabla="equipos">Equipos</button>
+                <button class="db-tab" data-tabla="puntuaciones">Puntuaciones</button>
+                <button class="db-tab" data-tabla="inscripciones">Preinscripciones</button>
+            </div>
+            <div id="db-dashboard-contenido" class="db-dashboard-contenido"></div>
+        </div>
+    </div>
 </body>
 </html>

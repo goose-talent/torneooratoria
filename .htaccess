@@ -1,14 +1,11 @@
 Options -Indexes
 RewriteEngine On
 
-# Redirige todos los endpoints de la API a api.php
-RewriteRule ^api/datos$                    api.php [L]
-RewriteRule ^api/equipos$                  api.php [L]
-RewriteRule ^api/equipos/borrar$           api.php [L]
-RewriteRule ^api/puntuaciones$             api.php [L]
-RewriteRule ^api/puntuaciones/borrar$      api.php [L]
-RewriteRule ^api/mi-ip$                    api.php [L]
-RewriteRule ^api/logo$                     api.php [L]
+# Toda la API va a api.php (que parsea el URI internamente)
+RewriteRule ^api/(.*)$          api.php [L]
+
+# Formulario de preinscripción
+RewriteRule ^formulario/?$      inscripcion.php [L]
 
 # Página de resultados por equipo (QR)
-RewriteRule ^resultados/(.+)$              resultados.php?id=$1 [L,QSA]
+RewriteRule ^resultados/(.+)$   resultados.php?id=$1 [L,QSA]
